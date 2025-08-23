@@ -94,7 +94,7 @@ func main() {
 
 	go func() {
 		common.SysLog("Server starting on port " + port)
-		err = server.Run(":" + port)
+		err = server.Run("0.0.0.0:" + port)
 		if err != nil {
 			common.FatalLog("failed to start HTTP server: " + err.Error())
 		}
