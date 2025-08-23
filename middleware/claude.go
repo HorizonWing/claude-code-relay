@@ -27,14 +27,14 @@ type RequestBody struct {
 func ClaudeCodeAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 判断是否来自真实的 Claude Code 请求
-		if !isRealClaudeCodeRequest(c) {
-			c.JSON(http.StatusForbidden, gin.H{
-				"error": "仅支持来自 Claude Code 的请求",
-				"code":  40003,
-			})
-			c.Abort()
-			return
-		}
+		// if !isRealClaudeCodeRequest(c) {
+		// 	c.JSON(http.StatusForbidden, gin.H{
+		// 		"error": "仅支持来自 Claude Code 的请求",
+		// 		"code":  40003,
+		// 	})
+		// 	c.Abort()
+		// 	return
+		// }
 
 		// 从多个可能的请求头中获取API Key
 		apiKey := getApiKeyFromHeaders(c)
