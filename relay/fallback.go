@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"sync"
@@ -267,7 +268,8 @@ func (h *FallbackHandler) executeFallback(c *gin.Context, accounts []model.Accou
 		result := h.executeSingleRequest(c, &account, requestBody, requestFunc, attemptStartTime)
 		
 		if result.Success {
-			log.Printf("✅ 账号 %s 请求成功，耗时: %v", account.Name, result.Duration)
+			log.Printf("✅ 账号 %s 请求成功，耗时: %v，流式输出已完成", account.Name, result.Duration)
+			// 成功时，HTTP响应已经通过流式方式实时写入客户端，直接返回结果
 			return result
 		}
 
@@ -284,7 +286,9 @@ func (h *FallbackHandler) executeFallback(c *gin.Context, accounts []model.Accou
 		}
 	}
 
-	// 所有账号都失败了
+	// 所有账号都失败了，记录失败信息但不写入HTTP响应（由controller处理）
+	common.SysError(fmt.Sprintf("所有账号都失败，最后错误: %s", lastError))
+	
 	if lastResult != nil {
 		lastResult.Duration = time.Since(startTime)
 		lastResult.FailureReason = "all_accounts_failed"
@@ -300,13 +304,13 @@ func (h *FallbackHandler) executeFallback(c *gin.Context, accounts []model.Accou
 	}
 }
 
-// executeSingleRequest 执行单个账号请求（不返回HTTP响应，仅收集结果用于fallback判断）
+// executeSingleRequest 执行单个账号请求（支持真正的流式输出）
 func (h *FallbackHandler) executeSingleRequest(c *gin.Context, account *model.Account, requestBody []byte, requestFunc RequestFunc, startTime time.Time) *FallbackResult {
-	// 创建响应捕获器，但不设置为gin.Context的Writer，避免直接写入HTTP响应
-	capture := NewResponseCapture(c.Writer)
+	// 创建流式响应捕获器
+	capture := NewStreamingResponseCapture(c.Writer)
 	originalWriter := c.Writer
 	
-	// 临时替换Writer来捕获响应数据，但不实际写入
+	// 临时替换Writer
 	c.Writer = capture
 
 	// 执行请求函数
@@ -324,19 +328,15 @@ func (h *FallbackHandler) executeSingleRequest(c *gin.Context, account *model.Ac
 		StatusCode:   capture.statusCode,
 		AttemptCount: 1,
 		Duration:     time.Since(startTime),
+		Success:      capture.isSuccess,
 	}
 
-	// 判断是否成功
-	if capture.statusCode >= 200 && capture.statusCode < 400 {
-		result.Success = true
-		// 成功时将捕获的响应写入原始Writer
-		originalWriter.WriteHeader(capture.statusCode)
-		originalWriter.Write(capture.body.Bytes())
-		common.SysLog(fmt.Sprintf("✅ 账号 %s 请求成功，状态码: %d", account.Name, capture.statusCode))
+	if capture.isSuccess {
+		// 成功时流式数据已经直接写入客户端，无需再次处理
+		common.SysLog(fmt.Sprintf("✅ 账号 %s 请求成功，状态码: %d，实现真正流式输出", account.Name, capture.statusCode))
 	} else {
-		result.Success = false
-		result.ErrorMessage = capture.body.String()
-		// 失败时只记录日志，不写入HTTP响应
+		// 失败时获取缓存的错误信息
+		result.ErrorMessage = string(capture.GetBufferedData())
 		common.SysError(fmt.Sprintf("❌ 账号 %s 请求失败，状态码: %d，错误: %s", 
 			account.Name, capture.statusCode, result.ErrorMessage))
 	}
@@ -384,38 +384,82 @@ func (h *FallbackHandler) GetAccountStats(accountID uint) map[string]interface{}
 // RequestFunc 请求函数类型
 type RequestFunc func(c *gin.Context, account *model.Account, requestBody []byte)
 
-// ResponseCapture 响应捕获器
-type ResponseCapture struct {
+// StreamingResponseCapture 流式响应捕获器
+type StreamingResponseCapture struct {
 	gin.ResponseWriter
 	statusCode int
-	body       *bytes.Buffer
+	isSuccess  bool
+	buffer     *bytes.Buffer
+	headerSet  bool
+	headersCopied bool  // 新增：标记是否已复制响应头
 }
 
-// NewResponseCapture 创建响应捕获器
-func NewResponseCapture(writer gin.ResponseWriter) *ResponseCapture {
-	return &ResponseCapture{
+// NewStreamingResponseCapture 创建流式响应捕获器
+func NewStreamingResponseCapture(writer gin.ResponseWriter) *StreamingResponseCapture {
+	return &StreamingResponseCapture{
 		ResponseWriter: writer,
 		statusCode:     200,
-		body:          bytes.NewBuffer([]byte{}),
+		buffer:         bytes.NewBuffer([]byte{}),
+		headerSet:      false,
+		headersCopied:  false,
 	}
 }
 
-// WriteHeader 捕获状态码（不立即写入原始Writer）
-func (w *ResponseCapture) WriteHeader(statusCode int) {
+// Header 拦截Header方法，确保成功时能正确设置流式响应头
+func (w *StreamingResponseCapture) Header() http.Header {
+	return w.ResponseWriter.Header()
+}
+
+// WriteHeader 捕获状态码并判断是否成功
+func (w *StreamingResponseCapture) WriteHeader(statusCode int) {
 	w.statusCode = statusCode
-	// 不调用原始Writer的WriteHeader，避免立即写入HTTP响应
+	w.isSuccess = statusCode >= 200 && statusCode < 400
+	
+	// 如果是成功响应，立即设置响应头启动流式输出
+	if w.isSuccess && !w.headerSet {
+		w.ResponseWriter.WriteHeader(statusCode)
+		w.headerSet = true
+	}
 }
 
-// Write 捕获响应体（不立即写入原始Writer）
-func (w *ResponseCapture) Write(data []byte) (int, error) {
-	w.body.Write(data)
-	// 返回数据长度，但不写入原始Writer
-	return len(data), nil
+// Write 写入响应体
+func (w *StreamingResponseCapture) Write(data []byte) (int, error) {
+	if len(data) == 0 {
+		return 0, nil
+	}
+	
+	if w.isSuccess && w.headerSet {
+		// 成功时直接流式写入，实现真正的流式输出
+		n, err := w.ResponseWriter.Write(data)
+		if err == nil {
+			// 立即刷新以确保流式输出
+			if flusher, ok := w.ResponseWriter.(interface{ Flush() }); ok {
+				flusher.Flush()
+			}
+		}
+		return n, err
+	} else if w.isSuccess && !w.headerSet {
+		// 第一次成功写入时，先设置响应头
+		w.ResponseWriter.WriteHeader(w.statusCode)
+		w.headerSet = true
+		
+		// 然后写入数据
+		n, err := w.ResponseWriter.Write(data)
+		if err == nil {
+			if flusher, ok := w.ResponseWriter.(interface{ Flush() }); ok {
+				flusher.Flush()
+			}
+		}
+		return n, err
+	} else {
+		// 失败时缓存数据，不写入响应
+		return w.buffer.Write(data)
+	}
 }
 
-// String 获取响应体字符串
-func (w *ResponseCapture) String() string {
-	return w.body.String()
+// GetBufferedData 获取缓存的数据（仅用于失败情况）
+func (w *StreamingResponseCapture) GetBufferedData() []byte {
+	return w.buffer.Bytes()
 }
 
 // min 辅助函数

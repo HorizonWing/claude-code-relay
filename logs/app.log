@@ -34,3 +34,46 @@
 [INFO] 2025/08/24 21:31:27 logger.go:38: Redis connection established
 [INFO] 2025/08/24 21:31:27 logger.go:38: Cron service started successfully
 [INFO] 2025/08/24 21:31:27 logger.go:38: Server starting on port 8080
+[INFO] 2025/08/24 21:38:15 logger.go:38: Shutting down server...
+[INFO] 2025/08/24 21:38:15 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 21:38:15 logger.go:38: Server stopped gracefully
+[INFO] 2025/08/24 21:38:15 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 21:38:15 logger.go:38: Claude Code Relay started
+[INFO] 2025/08/24 21:38:22 logger.go:38: Database initialized successfully
+[INFO] 2025/08/24 21:38:23 logger.go:38: Redis connection established
+[INFO] 2025/08/24 21:38:23 logger.go:38: Cron service started successfully
+[INFO] 2025/08/24 21:38:23 logger.go:38: Server starting on port 8080
+[INFO] 2025/08/24 21:39:14 logger.go:38: Shutting down server...
+[INFO] 2025/08/24 21:39:14 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 21:39:14 logger.go:38: Server stopped gracefully
+[INFO] 2025/08/24 21:39:14 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 21:40:36 logger.go:38: Claude Code Relay started
+[INFO] 2025/08/24 21:40:42 logger.go:38: Database initialized successfully
+[INFO] 2025/08/24 21:40:42 logger.go:38: Redis connection established
+[INFO] 2025/08/24 21:40:42 logger.go:38: Cron service started successfully
+[INFO] 2025/08/24 21:40:42 logger.go:38: Server starting on port 8080
+[ERROR] 2025/08/24 21:40:51 logger.go:46: ❌ 账号 鸭子 请求失败，状态码: 500，错误: {"error":{"message":"网络连接错误: Post \"https://sg.instcopilot-api.com1/v1/messages\": dial tcp: lookup sg.instcopilot-api.com1 on 127.0.0.11:53: no such host","type":"network_error"}}
+[INFO] 2025/08/24 21:41:19 logger.go:38: ✅ 账号 柏拉图cc 请求成功，状态码: 200
+[ERROR] 2025/08/24 21:46:10 logger.go:46: ❌ 账号 鸭子 请求失败，状态码: 500，错误: {"error":{"message":"网络连接错误: Post \"https://sg.instcopilot-api.com1/v1/messages\": dial tcp: lookup sg.instcopilot-api.com1 on 127.0.0.11:53: no such host: Post \"https://sg.instcopilot-api.com1/v1/messages\": dial tcp: lookup sg.instcopilot-api.com1 on 127.0.0.11:53: no such host","type":"network_error"}}
+[INFO] 2025/08/24 21:46:36 logger.go:38: ✅ 账号 柏拉图cc 请求成功，状态码: 200
+[INFO] 2025/08/24 21:49:42 logger.go:38: Shutting down server...
+[INFO] 2025/08/24 21:49:42 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 21:49:42 logger.go:38: Server stopped gracefully
+[INFO] 2025/08/24 21:49:42 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 21:49:42 logger.go:38: Claude Code Relay started
+[INFO] 2025/08/24 21:49:48 logger.go:38: Database initialized successfully
+[INFO] 2025/08/24 21:49:48 logger.go:38: Redis connection established
+[INFO] 2025/08/24 21:49:48 logger.go:38: Cron service started successfully
+[INFO] 2025/08/24 21:49:48 logger.go:38: Server starting on port 8080
+[INFO] 2025/08/24 21:50:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/24 21:50:34 logger.go:38: Shutting down server...
+[INFO] 2025/08/24 21:50:34 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 21:50:34 logger.go:38: Server stopped gracefully
+[INFO] 2025/08/24 21:50:34 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 21:50:45 logger.go:38: Claude Code Relay started
+[INFO] 2025/08/24 21:50:52 logger.go:38: Database initialized successfully
+[INFO] 2025/08/24 21:50:52 logger.go:38: Redis connection established
+[INFO] 2025/08/24 21:50:52 logger.go:38: Cron service started successfully
+[INFO] 2025/08/24 21:50:52 logger.go:38: Server starting on port 8080
+[ERROR] 2025/08/24 21:50:58 logger.go:46: ❌ 账号 鸭子 请求失败，状态码: 500，错误: {"error":{"message":"网络连接错误: Post \"https://sg.instcopilot-api.com1/v1/messages\": dial tcp: lookup sg.instcopilot-api.com1 on 127.0.0.11:53: no such host","type":"network_error"}}
+[INFO] 2025/08/24 21:51:13 logger.go:38: ✅ 账号 柏拉图cc 请求成功，状态码: 200，实现真正流式输出
