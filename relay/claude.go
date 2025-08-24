@@ -265,10 +265,10 @@ func createResponseReader(resp *http.Response) (io.Reader, error) {
 // handleSuccessResponse 处理成功响应（支持流式和非流式模式）
 func handleSuccessResponse(c *gin.Context, resp *http.Response, responseReader io.Reader, isStream bool) *common.TokenUsage {
 	c.Status(resp.StatusCode)
-	copyResponseHeaders(c, resp)
 	
 	if isStream {
-		// 流式模式：设置流式响应头并实时传输
+		// 流式模式：复制所有响应头并设置流式响应头
+		copyResponseHeaders(c, resp)
 		setStreamResponseHeaders(c)
 		c.Writer.Flush()
 
@@ -278,7 +278,8 @@ func handleSuccessResponse(c *gin.Context, resp *http.Response, responseReader i
 		}
 		return usageTokens
 	} else {
-		// 非流式模式：设置JSON响应头并一次性传输
+		// 非流式模式：复制响应头但强制设置Content-Type为application/json
+		copyResponseHeadersExceptContentType(c, resp)
 		c.Header("Content-Type", "application/json")
 
 		// 读取所有响应数据
@@ -312,16 +313,29 @@ func handleErrorResponse(c *gin.Context, resp *http.Response, responseReader io.
 	log.Printf("❌ 状态码: %s, 错误响应内容: %s", strconv.Itoa(resp.StatusCode), string(responseBody))
 
 	c.Status(resp.StatusCode)
-	copyResponseHeaders(c, resp)
+	copyResponseHeadersExceptContentType(c, resp)
+	c.Header("Content-Type", "application/json") // 错误响应强制设置为JSON格式
 
 	handleRateLimit(resp, responseBody, account)
-	c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), responseBody)
+	c.Data(resp.StatusCode, "application/json", responseBody)
 }
 
 // copyResponseHeaders 复制响应头
 func copyResponseHeaders(c *gin.Context, resp *http.Response) {
 	for name, values := range resp.Header {
 		if strings.ToLower(name) != "content-length" {
+			for _, value := range values {
+				c.Header(name, value)
+			}
+		}
+	}
+}
+
+// copyResponseHeadersExceptContentType 复制响应头但跳过Content-Type（用于非流式模式）
+func copyResponseHeadersExceptContentType(c *gin.Context, resp *http.Response) {
+	for name, values := range resp.Header {
+		lowerName := strings.ToLower(name)
+		if lowerName != "content-length" && lowerName != "content-type" {
 			for _, value := range values {
 				c.Header(name, value)
 			}

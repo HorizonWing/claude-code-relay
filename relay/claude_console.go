@@ -262,10 +262,10 @@ func handleConsoleSuccessResponse(c *gin.Context, resp *http.Response, responseR
 	}
 
 	c.Status(resp.StatusCode)
-	copyConsoleResponseHeaders(c, resp)
 	
 	if isStream {
-		// 流式模式：设置流式响应头并实时传输
+		// 流式模式：复制所有响应头并设置流式响应头
+		copyConsoleResponseHeaders(c, resp)
 		setConsoleStreamResponseHeaders(c)
 		c.Writer.Flush()
 
@@ -275,7 +275,8 @@ func handleConsoleSuccessResponse(c *gin.Context, resp *http.Response, responseR
 		}
 		return usageTokens
 	} else {
-		// 非流式模式：设置JSON响应头并一次性传输
+		// 非流式模式：复制响应头但强制设置Content-Type为application/json
+		copyConsoleResponseHeadersExceptContentType(c, resp)
 		c.Header("Content-Type", "application/json")
 
 		// 读取所有响应数据
@@ -301,6 +302,18 @@ func handleConsoleSuccessResponse(c *gin.Context, resp *http.Response, responseR
 func copyConsoleResponseHeaders(c *gin.Context, resp *http.Response) {
 	for name, values := range resp.Header {
 		if strings.ToLower(name) != "content-length" {
+			for _, value := range values {
+				c.Header(name, value)
+			}
+		}
+	}
+}
+
+// copyConsoleResponseHeadersExceptContentType 复制Console响应头但跳过Content-Type（用于非流式模式）
+func copyConsoleResponseHeadersExceptContentType(c *gin.Context, resp *http.Response) {
+	for name, values := range resp.Header {
+		lowerName := strings.ToLower(name)
+		if lowerName != "content-length" && lowerName != "content-type" {
 			for _, value := range values {
 				c.Header(name, value)
 			}
@@ -350,8 +363,9 @@ func handleConsoleErrorResponse(c *gin.Context, resp *http.Response, responseRea
 	log.Printf("❌ 状态码: %s, 错误响应内容: %s", strconv.Itoa(resp.StatusCode), string(responseBody))
 
 	c.Status(resp.StatusCode)
-	copyConsoleResponseHeaders(c, resp)
-	c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), responseBody)
+	copyConsoleResponseHeadersExceptContentType(c, resp)
+	c.Header("Content-Type", "application/json") // 错误响应强制设置为JSON格式
+	c.Data(resp.StatusCode, "application/json", responseBody)
 }
 
 // TestHandleClaudeConsoleRequest 测试处理Claude Console请求的函数

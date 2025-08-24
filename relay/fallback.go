@@ -544,20 +544,18 @@ func (w *StreamingResponseCapture) GetBufferedData() []byte {
 // FlushNonStreamResponse 输出非流式响应的缓存数据（仅在成功且非流式模式下调用）
 func (w *StreamingResponseCapture) FlushNonStreamResponse() error {
 	if !w.isStreamMode && w.isSuccess {
-		// 复制缓存的上游响应头到最终响应
+		// 复制缓存的上游响应头到最终响应，但跳过Content-Type
 		for name, values := range w.upstreamHeaders {
-			// 跳过content-length，让gin自动处理
-			if strings.ToLower(name) != "content-length" {
+			lowerName := strings.ToLower(name)
+			if lowerName != "content-length" && lowerName != "content-type" {
 				for _, value := range values {
 					w.ResponseWriter.Header().Add(name, value)
 				}
 			}
 		}
 		
-		// 确保设置正确的Content-Type（如果上游没有提供）
-		if w.ResponseWriter.Header().Get("Content-Type") == "" {
-			w.ResponseWriter.Header().Set("Content-Type", "application/json")
-		}
+		// 强制设置Content-Type为application/json（非流式响应必须是JSON）
+		w.ResponseWriter.Header().Set("Content-Type", "application/json")
 		
 		// 设置响应状态码
 		if !w.headerSet {

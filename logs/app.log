@@ -197,3 +197,14 @@
 [INFO] 2025/08/25 01:02:52 logger.go:38: ✅ 账号 鸭子hk 请求成功，状态码: 200，TTFB: 18.575980009s，总耗时: 19.185809801s，模式: 非流式，数据大小: 1824B
 [INFO] 2025/08/25 01:03:54 logger.go:38: ✅ 账号 鸭子hk 请求成功，状态码: 200，TTFB: 11.311268589s，总耗时: 11.370775714s，模式: 非流式，数据大小: 1020B
 [INFO] 2025/08/25 01:04:57 logger.go:38: ✅ 账号 鸭子hk 请求成功，状态码: 200，TTFB: 13.481202382s，总耗时: 13.545069215s，模式: 非流式，数据大小: 1023B
+[INFO] 2025/08/25 01:10:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 01:12:40 logger.go:38: Shutting down server...
+[INFO] 2025/08/25 01:12:40 logger.go:38: Cron service stopped
+[INFO] 2025/08/25 01:12:40 logger.go:38: Server stopped gracefully
+[INFO] 2025/08/25 01:12:40 logger.go:38: Cron service stopped
+[INFO] 2025/08/25 01:12:59 logger.go:38: Claude Code Relay started
+[INFO] 2025/08/25 01:13:02 logger.go:38: Database initialized successfully
+[INFO] 2025/08/25 01:13:02 logger.go:38: Redis connection established
+[INFO] 2025/08/25 01:13:02 logger.go:38: Cron service started successfully
+[INFO] 2025/08/25 01:13:02 logger.go:38: Server starting on port 8080
+[INFO] 2025/08/25 01:15:14 logger.go:38: ✅ 账号 鸭子hk 请求成功，状态码: 200，TTFB: 17.093837175s，总耗时: 17.158581008s，模式: 非流式，数据大小: 1017B
