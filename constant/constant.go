@@ -34,12 +34,20 @@ const (
 	NotFound               = 40005
 	TooManyRequests        = 42901
 	InternalServerError    = 50000
+	ServiceUnavailable     = 50003
 
 	// 平台类型
 	PlatformClaude        = "claude"
 	PlatformClaudeConsole = "claude_console"
 	PlatformOpenAI        = "openai"
 	PlatformGemini        = "gemini"
+
+	// 用户友好的错误消息
+	ErrServiceUnavailable = "服务暂时不可用，请稍后重试"
+	ErrNetworkTimeout     = "网络连接超时，请稍后重试"
+	ErrRateLimitExceeded  = "请求过于频繁，请稍后重试"
+	ErrInvalidRequest     = "请求格式错误"
+	ErrAuthenticationFail = "身份验证失败"
 
 	ClaudeCodeSystemPrompt = "You are Claude Code, Anthropic's official CLI for Claude."
 )

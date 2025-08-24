@@ -5,7 +5,9 @@ version: '3.8'
 
 services:
   app:
-    image: registry.cn-hangzhou.aliyuncs.com/ripper/claude-code-relay:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: claude-code-relay-app
     restart: unless-stopped
     ports:
@@ -16,9 +18,9 @@ services:
       # 确保时区设置正确
       TZ: Asia/Shanghai
     volumes:
-      - app_logs:/app/logs
+      - ./logs:/app/logs
       # 如果使用SQLite，取消下面这行的注释
-      # - app_data:/app/data
+      # - ./data:/app/data
     networks:
       - claude-network
     healthcheck:
@@ -41,13 +43,6 @@ services:
       - no-new-privileges:true
     # 非root用户运行（如果镜像支持）
     # user: "1000:1000"
-
-volumes:
-  app_logs:
-    driver: local
-  # 如果使用SQLite，取消下面这行的注释
-  # app_data:
-  #   driver: local
 
 networks:
   claude-network:

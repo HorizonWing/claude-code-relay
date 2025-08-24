@@ -612,6 +612,14 @@ func buildMenuByRole(role string) []MenuItem {
 							Title: "系统日志",
 						},
 					},
+					{
+						Path:      "fallback",
+						Name:      "AdminFallback",
+						Component: "/admin/fallback/index",
+						Meta: MenuMeta{
+							Title: "Fallback管理",
+						},
+					},
 				},
 			},
 		}

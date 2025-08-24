@@ -135,6 +135,18 @@ func SetAPIRouter(server *gin.Engine) {
 					adminLogs.DELETE("/cleanup", controller.DeleteExpiredLogs) // 删除过期日志
 				}
 
+				// Fallback管理接口（管理员专用）
+				fallback := admin.Group("/fallback")
+				{
+					fallback.GET("/stats", controller.GetFallbackStats)               // 获取fallback统计信息
+					fallback.PUT("/config", controller.UpdateFallbackConfig)          // 更新fallback配置
+					fallback.POST("/disable-account", controller.DisableAccountManually) // 手动禁用账号
+					fallback.POST("/enable-account", controller.EnableAccountManually)   // 手动启用账号
+					fallback.GET("/account-health", controller.GetAccountHealth)       // 获取账号健康状态
+					fallback.POST("/reset-metrics", controller.ResetMetrics)           // 重置指标
+					fallback.GET("/export-metrics", controller.ExportMetrics)          // 导出指标数据
+				}
+
 				// 定时任务测试接口（管理员专用）
 				admin.POST("/test/reset-stats", controller.ManualResetStats) // 手动重置统计数据
 				admin.POST("/test/clean-logs", controller.ManualCleanLogs)   // 手动清理过期日志

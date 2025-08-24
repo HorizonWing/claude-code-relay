@@ -1,0 +1,36 @@
+[INFO] 2025/08/24 20:51:09 logger.go:38: Claude Code Relay started
+[INFO] 2025/08/24 20:51:16 logger.go:38: Database initialized successfully
+[INFO] 2025/08/24 20:51:16 logger.go:38: Redis connection established
+[INFO] 2025/08/24 20:51:16 logger.go:38: Cron service started successfully
+[INFO] 2025/08/24 20:51:16 logger.go:38: Server starting on port 8080
+[INFO] 2025/08/24 20:53:38 logger.go:38: Shutting down server...
+[INFO] 2025/08/24 20:53:38 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 20:53:38 logger.go:38: Server stopped gracefully
+[INFO] 2025/08/24 20:53:38 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 21:07:38 logger.go:38: Claude Code Relay started
+[INFO] 2025/08/24 21:07:42 logger.go:38: Database initialized successfully
+[INFO] 2025/08/24 21:07:42 logger.go:38: Redis connection established
+[INFO] 2025/08/24 21:07:42 logger.go:38: Cron service started successfully
+[INFO] 2025/08/24 21:07:42 logger.go:38: Server starting on port 8080
+[INFO] 2025/08/24 21:10:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/24 21:18:02 logger.go:38: Shutting down server...
+[INFO] 2025/08/24 21:18:02 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 21:18:02 logger.go:38: Server stopped gracefully
+[INFO] 2025/08/24 21:18:02 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 21:18:16 logger.go:38: Claude Code Relay started
+[INFO] 2025/08/24 21:18:19 logger.go:38: Database initialized successfully
+[INFO] 2025/08/24 21:18:19 logger.go:38: Redis connection established
+[INFO] 2025/08/24 21:18:19 logger.go:38: Cron service started successfully
+[INFO] 2025/08/24 21:18:19 logger.go:38: Server starting on port 8080
+[INFO] 2025/08/24 21:20:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/24 21:30:00 logger.go:38: Starting abnormal accounts recovery task
+[INFO] 2025/08/24 21:30:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/24 21:30:53 logger.go:38: Shutting down server...
+[INFO] 2025/08/24 21:30:53 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 21:30:53 logger.go:38: Server stopped gracefully
+[INFO] 2025/08/24 21:30:53 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 21:31:19 logger.go:38: Claude Code Relay started
+[INFO] 2025/08/24 21:31:26 logger.go:38: Database initialized successfully
+[INFO] 2025/08/24 21:31:27 logger.go:38: Redis connection established
+[INFO] 2025/08/24 21:31:27 logger.go:38: Cron service started successfully
+[INFO] 2025/08/24 21:31:27 logger.go:38: Server starting on port 8080

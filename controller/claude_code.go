@@ -88,7 +88,7 @@ func ExchangeCode(c *gin.Context) {
 	})
 }
 
-// GetMessages 获取对话消息
+// GetMessages 获取对话消息（支持公共fallback机制）
 func GetMessages(c *gin.Context) {
 	// 从上下文中获取API Key的详细信息
 	apiKey, _ := c.Get("api_key")
@@ -139,24 +139,43 @@ func GetMessages(c *gin.Context) {
 		return
 	}
 
-	// 选择第一个账号（已按优先级和使用次数排序）
-	selectedAccount := filteredAccounts[0]
+	// 使用公共fallback机制处理请求
+	result := relay.HandleWithFallback(c, filteredAccounts, body, handleRelayRequest)
+	
+	// 记录性能数据
+	if result.Account != nil {
+		relay.UpdateAccountPerformance(keyInfo.GroupID, result.Account.ID, result.Success, result.Duration)
+	}
+	
+	// 如果所有账号都失败，返回用户友好的通用错误信息
+	if !result.Success {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": gin.H{
+				"message": constant.ErrServiceUnavailable,
+				"type":    "service_unavailable",
+			},
+		})
+	}
+}
 
-	// 根据平台类型路由到不同的处理器
-	switch selectedAccount.PlatformType {
+// handleRelayRequest 处理中继请求的包装函数
+// 根据账号平台类型调用相应的处理函数
+func handleRelayRequest(c *gin.Context, account *model.Account, requestBody []byte) {
+	switch account.PlatformType {
 	case constant.PlatformClaude:
-		relay.HandleClaudeRequest(c, &selectedAccount, body)
+		relay.HandleClaudeRequest(c, account, requestBody)
 	case constant.PlatformClaudeConsole:
-		relay.HandleClaudeConsoleRequest(c, &selectedAccount, body)
+		relay.HandleClaudeConsoleRequest(c, account, requestBody)
 	case constant.PlatformOpenAI:
-		relay.HandleOpenAIRequest(c, &selectedAccount, body)
+		relay.HandleOpenAIRequest(c, account, requestBody)
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "不支持的平台类型: " + selectedAccount.PlatformType,
+			"message": "不支持的平台类型: " + account.PlatformType,
 			"code":    constant.InvalidParams,
 		})
 	}
 }
+
 
 // TestGetMessages 测试账号连接
 func TestGetMessages(c *gin.Context) {

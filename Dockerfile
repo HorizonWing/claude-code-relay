@@ -49,12 +49,13 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 WORKDIR /app
 
-# 创建必要的目录
-RUN mkdir -p /app/logs
-
 # 创建非root用户
-RUN useradd -r -s /bin/false appuser && \
-    chown -R appuser:appuser /app
+RUN useradd -r -s /bin/false appuser
+
+# 创建必要的目录并设置权限
+RUN mkdir -p /app/logs && \
+    chown -R appuser:appuser /app && \
+    chmod -R 755 /app/logs
 
 # 复制后端可执行文件
 COPY --from=backend-builder --chown=appuser:appuser /app/claude-code-relay .

@@ -33,12 +33,12 @@ const (
 
 // Console错误类型定义
 var (
-	consoleErrRequestBodyRead = gin.H{"error": map[string]interface{}{"type": "request_body_error", "message": "Failed to read request body"}}
-	consoleErrCreateRequest   = gin.H{"error": map[string]interface{}{"type": "internal_server_error", "message": "Failed to create request"}}
-	consoleErrProxyConfig     = gin.H{"error": map[string]interface{}{"type": "proxy_configuration_error", "message": "Invalid proxy URI"}}
-	consoleErrTimeout         = gin.H{"error": map[string]interface{}{"type": "timeout_error", "message": "Request was canceled or timed out"}}
-	consoleErrNetworkError    = gin.H{"error": map[string]interface{}{"type": "network_error", "message": "Failed to execute request"}}
-	consoleErrDecompression   = gin.H{"error": map[string]interface{}{"type": "decompression_error", "message": "Failed to create decompressor"}}
+	consoleErrRequestBodyRead = gin.H{"error": map[string]interface{}{"type": "request_body_error", "message": "读取请求体失败"}}
+	consoleErrCreateRequest   = gin.H{"error": map[string]interface{}{"type": "internal_server_error", "message": "服务内部错误"}}
+	consoleErrProxyConfig     = gin.H{"error": map[string]interface{}{"type": "proxy_configuration_error", "message": "代理配置错误"}}
+	consoleErrTimeout         = gin.H{"error": map[string]interface{}{"type": "timeout_error", "message": "请求超时，请稍后重试"}}
+	consoleErrNetworkError    = gin.H{"error": map[string]interface{}{"type": "network_error", "message": "网络连接错误"}}
+	consoleErrDecompression   = gin.H{"error": map[string]interface{}{"type": "decompression_error", "message": "数据解压缩失败"}}
 )
 
 // HandleClaudeConsoleRequest 处理Claude Console平台的请求

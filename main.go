@@ -4,6 +4,7 @@ import (
 	"claude-code-relay/common"
 	"claude-code-relay/middleware"
 	"claude-code-relay/model"
+	"claude-code-relay/relay"
 	"claude-code-relay/router"
 	"claude-code-relay/scheduled"
 	"fmt"
@@ -57,6 +58,10 @@ func main() {
 	// 初始化定时任务服务
 	scheduled.InitCronService()
 	defer scheduled.StopCronService()
+
+	// 初始化fallback管理器
+	relay.InitFallbackManager(nil)
+	defer relay.CleanupStaleData(time.Hour * 24)
 
 	// 初始化HTTP服务器
 	server := gin.New()

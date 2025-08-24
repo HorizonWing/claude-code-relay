@@ -26,6 +26,7 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+
 const (
 	ClaudeAPIURL        = "https://api.anthropic.com/v1/messages"
 	ClaudeOAuthTokenURL = "https://console.anthropic.com/v1/oauth/token"
@@ -45,17 +46,18 @@ const (
 	accountStatusActive    = 1
 	accountStatusDisabled  = 2
 	accountStatusRateLimit = 3
+	accountStatusFailed    = 4 // 账号临时失败状态
 )
 
 // 错误类型定义
 var (
-	errAuthFailed    = gin.H{"error": map[string]interface{}{"type": "authentication_error", "message": "Failed to get valid access token"}}
-	errCreateRequest = gin.H{"error": map[string]interface{}{"type": "internal_server_error", "message": "Failed to create request"}}
-	errProxyConfig   = gin.H{"error": map[string]interface{}{"type": "proxy_configuration_error", "message": "Invalid proxy URI"}}
-	errTimeout       = gin.H{"error": map[string]interface{}{"type": "timeout_error", "message": "Request was canceled or timed out"}}
-	errNetworkError  = gin.H{"error": map[string]interface{}{"type": "network_error", "message": "Failed to execute request"}}
-	errDecompression = gin.H{"error": map[string]interface{}{"type": "decompression_error", "message": "Failed to create decompressor"}}
-	errResponseRead  = gin.H{"error": map[string]interface{}{"type": "response_read_error", "message": "Failed to read error response"}}
+	errAuthFailed    = gin.H{"error": map[string]interface{}{"type": "authentication_error", "message": "身份验证失败"}}
+	errCreateRequest = gin.H{"error": map[string]interface{}{"type": "internal_server_error", "message": "服务内部错误"}}
+	errProxyConfig   = gin.H{"error": map[string]interface{}{"type": "proxy_configuration_error", "message": "代理配置错误"}}
+	errTimeout       = gin.H{"error": map[string]interface{}{"type": "timeout_error", "message": "请求超时，请稍后重试"}}
+	errNetworkError  = gin.H{"error": map[string]interface{}{"type": "network_error", "message": "网络连接错误"}}
+	errDecompression = gin.H{"error": map[string]interface{}{"type": "decompression_error", "message": "数据解压缩失败"}}
+	errResponseRead  = gin.H{"error": map[string]interface{}{"type": "response_read_error", "message": "读取响应失败"}}
 )
 
 // OAuthTokenResponse 表示OAuth token刷新响应
