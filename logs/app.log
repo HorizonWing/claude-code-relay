@@ -208,3 +208,51 @@
 [INFO] 2025/08/25 01:13:02 logger.go:38: Cron service started successfully
 [INFO] 2025/08/25 01:13:02 logger.go:38: Server starting on port 8080
 [INFO] 2025/08/25 01:15:14 logger.go:38: ✅ 账号 鸭子hk 请求成功，状态码: 200，TTFB: 17.093837175s，总耗时: 17.158581008s，模式: 非流式，数据大小: 1017B
+[INFO] 2025/08/25 01:20:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 01:30:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 01:30:00 logger.go:38: Starting abnormal accounts recovery task
+[INFO] 2025/08/25 01:40:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 01:50:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 02:00:00 logger.go:38: Starting abnormal accounts recovery task
+[INFO] 2025/08/25 02:00:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 02:10:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 02:20:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 02:30:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 02:30:00 logger.go:38: Starting abnormal accounts recovery task
+[INFO] 2025/08/25 02:40:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 02:50:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 03:00:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 03:00:00 logger.go:38: Starting abnormal accounts recovery task
+[INFO] 2025/08/25 03:10:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 03:20:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 03:30:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 03:30:00 logger.go:38: Starting abnormal accounts recovery task
+[INFO] 2025/08/25 03:40:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 03:50:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 04:00:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 04:00:00 logger.go:38: Starting abnormal accounts recovery task
+[INFO] 2025/08/25 04:10:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 04:20:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 04:30:00 logger.go:38: Starting abnormal accounts recovery task
+[INFO] 2025/08/25 04:30:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 04:40:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 04:50:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 05:00:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 05:00:00 logger.go:38: Starting abnormal accounts recovery task
+[INFO] 2025/08/25 05:00:00 logger.go:38: Found 1 abnormal accounts to test
+[INFO] 2025/08/25 05:00:04 logger.go:38: Account 鸭子hk (ID: 7) recovered successfully
+[INFO] 2025/08/25 05:00:04 logger.go:38: Abnormal accounts recovery task completed in 4.175907752s. Recovered: 1, Failed: 0
+[INFO] 2025/08/25 05:10:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 05:20:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 05:30:00 logger.go:38: Starting abnormal accounts recovery task
+[INFO] 2025/08/25 05:30:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 05:40:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 05:50:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 06:00:00 logger.go:38: Starting abnormal accounts recovery task
+[INFO] 2025/08/25 06:00:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 06:10:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 06:20:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 06:30:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 06:30:00 logger.go:38: Starting abnormal accounts recovery task
+[INFO] 2025/08/25 06:40:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 06:50:00 logger.go:38: Starting rate limit expired accounts check task

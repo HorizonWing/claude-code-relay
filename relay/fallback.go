@@ -438,9 +438,13 @@ func NewStreamingResponseCapture(writer gin.ResponseWriter, startTime time.Time,
 // isFallbackStreamResponse 根据响应的Content-Type判断是否为流式响应  
 func isFallbackStreamResponse(header http.Header) bool {
 	contentType := header.Get("Content-Type")
-	return strings.Contains(contentType, "text/event-stream") || 
+	isStream := strings.Contains(contentType, "text/event-stream") || 
 		   strings.Contains(contentType, "text/plain") ||
 		   strings.Contains(contentType, "application/x-ndjson")
+	
+	// 添加调试日志
+	log.Printf("🔍 [Fallback] 响应Content-Type: '%s', 判断为流式: %v", contentType, isStream)
+	return isStream
 }
 
 // Header 拦截Header方法，缓存上游响应头
@@ -460,23 +464,33 @@ func (w *StreamingResponseCapture) CacheUpstreamHeaders() {
 
 // WriteHeader 捕获状态码并判断是否成功
 func (w *StreamingResponseCapture) WriteHeader(statusCode int) {
+	log.Printf("🔍 [Fallback] WriteHeader调用: statusCode=%d", statusCode)
+	
 	w.statusCode = statusCode
 	w.isSuccess = statusCode >= 200 && statusCode < 400
 	
 	// 在收到响应头时根据Content-Type判断是否为流式模式
 	if !w.headersCopied {
+		log.Printf("🔍 [Fallback] 开始判断流式模式，当前ResponseWriter头部：")
+		for name, values := range w.ResponseWriter.Header() {
+			log.Printf("🔍 [Fallback]   %s: %v", name, values)
+		}
 		w.isStreamMode = isFallbackStreamResponse(w.ResponseWriter.Header())
 		w.headersCopied = true
 	}
 	
+	log.Printf("🔍 [Fallback] 流式判断结果: isStreamMode=%v, isSuccess=%v", w.isStreamMode, w.isSuccess)
+	
 	if w.isStreamMode {
 		// 流式模式：如果成功立即设置响应头启动流式输出
 		if w.isSuccess && !w.headerSet {
+			log.Printf("📡 [Fallback] 启动流式输出模式")
 			w.ResponseWriter.WriteHeader(statusCode)
 			w.headerSet = true
 		}
 	} else {
 		// 非流式模式：先缓存响应头，不立即输出
+		log.Printf("📄 [Fallback] 缓存响应头用于非流式输出")
 		w.CacheUpstreamHeaders()
 	}
 }
@@ -543,7 +557,11 @@ func (w *StreamingResponseCapture) GetBufferedData() []byte {
 
 // FlushNonStreamResponse 输出非流式响应的缓存数据（仅在成功且非流式模式下调用）
 func (w *StreamingResponseCapture) FlushNonStreamResponse() error {
+	log.Printf("🔍 [Fallback] FlushNonStreamResponse: isStreamMode=%v, isSuccess=%v", w.isStreamMode, w.isSuccess)
+	
 	if !w.isStreamMode && w.isSuccess {
+		log.Printf("📄 [Fallback] 开始输出非流式响应，数据大小: %d bytes", w.buffer.Len())
+		
 		// 复制缓存的上游响应头到最终响应，但跳过Content-Type
 		for name, values := range w.upstreamHeaders {
 			lowerName := strings.ToLower(name)
@@ -555,6 +573,7 @@ func (w *StreamingResponseCapture) FlushNonStreamResponse() error {
 		}
 		
 		// 强制设置Content-Type为application/json（非流式响应必须是JSON）
+		log.Printf("📄 [Fallback] 强制设置Content-Type为application/json")
 		w.ResponseWriter.Header().Set("Content-Type", "application/json")
 		
 		// 设置响应状态码
@@ -565,8 +584,11 @@ func (w *StreamingResponseCapture) FlushNonStreamResponse() error {
 		
 		// 输出所有缓存的数据
 		_, err := w.ResponseWriter.Write(w.buffer.Bytes())
+		log.Printf("📄 [Fallback] 非流式响应数据已输出完成，错误: %v", err)
 		return err
 	}
+	
+	log.Printf("⚠️ [Fallback] 跳过非流式响应输出：isStreamMode=%v, isSuccess=%v", w.isStreamMode, w.isSuccess)
 	return nil
 }
 

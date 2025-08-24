@@ -227,9 +227,13 @@ func setStreamHeaders(c *gin.Context, req *http.Request) {
 // isStreamResponse 根据响应的Content-Type判断是否为流式响应
 func isStreamResponse(resp *http.Response) bool {
 	contentType := resp.Header.Get("Content-Type")
-	return strings.Contains(contentType, "text/event-stream") || 
+	isStream := strings.Contains(contentType, "text/event-stream") || 
 		   strings.Contains(contentType, "text/plain") ||
 		   strings.Contains(contentType, "application/x-ndjson")
+	
+	// 添加调试日志
+	log.Printf("🔍 响应Content-Type: '%s', 判断为流式: %v", contentType, isStream)
+	return isStream
 }
 
 // handleRequestError 处理请求错误
@@ -266,8 +270,11 @@ func createResponseReader(resp *http.Response) (io.Reader, error) {
 func handleSuccessResponse(c *gin.Context, resp *http.Response, responseReader io.Reader, isStream bool) *common.TokenUsage {
 	c.Status(resp.StatusCode)
 	
+	log.Printf("🔍 处理成功响应: 流式模式=%v, 状态码=%d", isStream, resp.StatusCode)
+	
 	if isStream {
 		// 流式模式：复制所有响应头并设置流式响应头
+		log.Printf("📡 使用流式模式处理响应")
 		copyResponseHeaders(c, resp)
 		setStreamResponseHeaders(c)
 		c.Writer.Flush()
@@ -279,6 +286,7 @@ func handleSuccessResponse(c *gin.Context, resp *http.Response, responseReader i
 		return usageTokens
 	} else {
 		// 非流式模式：复制响应头但强制设置Content-Type为application/json
+		log.Printf("📄 使用非流式模式处理响应，强制设置Content-Type为application/json")
 		copyResponseHeadersExceptContentType(c, resp)
 		c.Header("Content-Type", "application/json")
 
@@ -290,6 +298,7 @@ func handleSuccessResponse(c *gin.Context, resp *http.Response, responseReader i
 		}
 
 		// 一次性写入响应
+		log.Printf("📄 写入非流式响应数据，大小: %d bytes", len(responseData))
 		c.Data(resp.StatusCode, "application/json", responseData)
 
 		// 解析响应中的usage信息
