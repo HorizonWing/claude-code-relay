@@ -287,8 +287,8 @@ func HandleOpenAIRequest(c *gin.Context, account *model.Account, requestBody []b
 		return
 	}
 
-	// 统一使用流式响应处理（传递原始Claude模型名称，用于日志记录）
-	handleStreamingResponse(c, resp, claudeReq.Model, claudeReq.Stream, account, apiKey, startTime)
+	// 统一使用流式响应处理（根据实际响应判断是否流式，传递原始Claude模型名称用于日志记录）
+	handleStreamingResponse(c, resp, claudeReq.Model, account, apiKey, startTime)
 }
 
 // extractSystemMessage 从system字段中提取系统消息文本
@@ -533,13 +533,13 @@ func convertClaudeToOpenAI(claudeReq ClaudeRequest, modelName string) OpenAIRequ
 		}
 	}
 
-	// 构建OpenAI请求（尊重Claude请求中的stream参数）
+	// 构建OpenAI请求（保持原始请求中的stream参数）
 	openaiReq := OpenAIRequest{
 		Model:       modelName,
 		Messages:    openaiMessages,
 		Temperature: claudeReq.Temperature,
 		TopP:        claudeReq.TopP,
-		Stream:      claudeReq.Stream, // 使用Claude请求中的stream设置
+		Stream:      claudeReq.Stream, // 保持原始Claude请求中的stream设置
 		Stop:        claudeReq.StopSequences,
 	}
 
@@ -639,9 +639,12 @@ func convertOpenAIToClaudeResponse(openaiResp OpenAIResponse, model string) Clau
 	}
 }
 
-// handleStreamingResponse 处理流式和非流式响应
-func handleStreamingResponse(c *gin.Context, resp *http.Response, model string, isClientStream bool, account *model.Account, apiKey *model.ApiKey, startTime time.Time) {
-	if isClientStream {
+// handleStreamingResponse 处理流式和非流式响应（根据实际响应判断是否流式）
+func handleStreamingResponse(c *gin.Context, resp *http.Response, model string, account *model.Account, apiKey *model.ApiKey, startTime time.Time) {
+	// 根据响应Content-Type判断是否为流式
+	isStream := isOpenAIStreamResponse(resp)
+	
+	if isStream {
 		// 流式模式：设置流式响应头
 		c.Header("Content-Type", "text/event-stream")
 		c.Header("Cache-Control", "no-cache")
@@ -650,7 +653,7 @@ func handleStreamingResponse(c *gin.Context, resp *http.Response, model string, 
 
 		// 创建流式转换器并处理OpenAI流式响应
 		transformer := createStreamTransformer(model)
-		usageTokens := processOpenAIStreamResponse(c.Writer, resp.Body, transformer, isClientStream)
+		usageTokens := processOpenAIStreamResponse(c.Writer, resp.Body, transformer, true)
 
 		// 如果没有usage信息，创建0值的TokenUsage用于日志记录
 		if usageTokens == nil {
@@ -675,7 +678,7 @@ func handleStreamingResponse(c *gin.Context, resp *http.Response, model string, 
 			duration := time.Since(startTime).Milliseconds()
 			logService := service.NewLogService()
 			go func() {
-				_, err := logService.CreateLogFromTokenUsage(usageTokens, apiKey.UserID, apiKey.ID, account.ID, duration, isClientStream)
+				_, err := logService.CreateLogFromTokenUsage(usageTokens, apiKey.UserID, apiKey.ID, account.ID, duration, true)
 				if err != nil {
 					log.Printf("保存日志失败: %v", err)
 				}
@@ -731,13 +734,21 @@ func handleStreamingResponse(c *gin.Context, resp *http.Response, model string, 
 			duration := time.Since(startTime).Milliseconds()
 			logService := service.NewLogService()
 			go func() {
-				_, err := logService.CreateLogFromTokenUsage(usageTokens, apiKey.UserID, apiKey.ID, account.ID, duration, isClientStream)
+				_, err := logService.CreateLogFromTokenUsage(usageTokens, apiKey.UserID, apiKey.ID, account.ID, duration, false)
 				if err != nil {
 					log.Printf("保存日志失败: %v", err)
 				}
 			}()
 		}
 	}
+}
+
+// isOpenAIStreamResponse 根据响应的Content-Type判断是否为流式响应
+func isOpenAIStreamResponse(resp *http.Response) bool {
+	contentType := resp.Header.Get("Content-Type")
+	return strings.Contains(contentType, "text/event-stream") || 
+		   strings.Contains(contentType, "text/plain") ||
+		   strings.Contains(contentType, "application/x-ndjson")
 }
 
 // convertOpenAIResponseToClaude 将OpenAI非流式响应转换为Claude格式

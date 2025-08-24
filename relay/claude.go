@@ -109,11 +109,8 @@ func HandleClaudeRequest(c *gin.Context, account *model.Account, requestBody []b
 
 	var usageTokens *common.TokenUsage
 	if resp.StatusCode < statusBadRequest {
-		// 检测请求是否为流式
-		isStream := true // 默认流式
-		if gjson.GetBytes(requestData.Body, "stream").Exists() {
-			isStream = gjson.GetBytes(requestData.Body, "stream").Bool()
-		}
+		// 根据响应Content-Type判断是否为流式
+		isStream := isStreamResponse(resp)
 		usageTokens = handleSuccessResponse(c, resp, responseReader, isStream)
 	} else {
 		handleErrorResponse(c, resp, responseReader, account)
@@ -143,16 +140,9 @@ func extractAPIKey(c *gin.Context) *model.ApiKey {
 
 // prepareRequestBody 准备请求体，添加必要的字段
 func prepareRequestBody(requestBody []byte) *requestData {
-	// 检查用户是否已经设置了stream参数，如果没有则默认设置为true（保持向后兼容）
-	if !gjson.GetBytes(requestBody, "stream").Exists() {
-		body, _ := sjson.SetBytes(requestBody, "stream", true) // 默认流式输出
-		body, _ = sjson.SetBytes(body, "metadata.user_id", common.GetInstanceID()) // 设置固定的用户ID
-		return &requestData{Body: body}
-	} else {
-		// 用户已经设置了stream参数，保持不变，只添加metadata
-		body, _ := sjson.SetBytes(requestBody, "metadata.user_id", common.GetInstanceID()) // 设置固定的用户ID
-		return &requestData{Body: body}
-	}
+	// 只添加metadata，不修改stream参数，让服务端根据实际需要返回流式或非流式
+	body, _ := sjson.SetBytes(requestBody, "metadata.user_id", common.GetInstanceID()) // 设置固定的用户ID
+	return &requestData{Body: body}
 }
 
 // createHTTPClient 创建HTTP客户端
@@ -232,6 +222,14 @@ func setStreamHeaders(c *gin.Context, req *http.Request) {
 	if c.Request.Header.Get("Accept") == "" {
 		req.Header.Set("Accept", "text/event-stream")
 	}
+}
+
+// isStreamResponse 根据响应的Content-Type判断是否为流式响应
+func isStreamResponse(resp *http.Response) bool {
+	contentType := resp.Header.Get("Content-Type")
+	return strings.Contains(contentType, "text/event-stream") || 
+		   strings.Contains(contentType, "text/plain") ||
+		   strings.Contains(contentType, "application/x-ndjson")
 }
 
 // handleRequestError 处理请求错误

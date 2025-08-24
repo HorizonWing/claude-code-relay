@@ -142,3 +142,58 @@
 [INFO] 2025/08/24 22:27:55 logger.go:38: Cron service started successfully
 [INFO] 2025/08/24 22:27:55 logger.go:38: Server starting on port 8080
 [INFO] 2025/08/24 22:28:21 logger.go:38: ✅ 账号 鸭子 请求成功，状态码: 200，TTFB: 19.796656218s，总耗时: 20.081660676s，模式: 非流式，数据大小: 1116B
+[INFO] 2025/08/24 22:29:05 logger.go:38: ✅ 账号 鸭子 请求成功，状态码: 200，TTFB: 8.38031442s，总耗时: 24.431169969s，模式: 流式，数据大小: 11211B
+[INFO] 2025/08/24 22:30:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/24 22:30:00 logger.go:38: Starting abnormal accounts recovery task
+[INFO] 2025/08/24 22:40:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/24 22:50:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/24 23:00:00 logger.go:38: Starting abnormal accounts recovery task
+[INFO] 2025/08/24 23:00:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/24 23:00:00 logger.go:38: Found 1 abnormal accounts to test
+[INFO] 2025/08/24 23:00:03 logger.go:38: Account 柏拉图cc (ID: 4) recovered successfully
+[INFO] 2025/08/24 23:00:03 logger.go:38: Abnormal accounts recovery task completed in 3.478321251s. Recovered: 1, Failed: 0
+[INFO] 2025/08/24 23:10:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/24 23:20:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/24 23:30:00 logger.go:38: Starting abnormal accounts recovery task
+[INFO] 2025/08/24 23:30:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/24 23:40:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/24 23:50:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 00:00:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 00:00:00 logger.go:38: Starting daily stats reset task
+[INFO] 2025/08/25 00:00:00 logger.go:38: Starting abnormal accounts recovery task
+[INFO] 2025/08/25 00:00:00 logger.go:38: Account daily stats reset successfully
+[INFO] 2025/08/25 00:00:00 logger.go:38: API Key daily stats reset successfully
+[INFO] 2025/08/25 00:00:00 logger.go:38: Daily stats reset task completed in 126.859333ms
+[INFO] 2025/08/25 00:10:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 00:20:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 00:30:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 00:30:00 logger.go:38: Starting abnormal accounts recovery task
+[INFO] 2025/08/25 00:33:39 logger.go:38: Shutting down server...
+[INFO] 2025/08/25 00:33:39 logger.go:38: Cron service stopped
+[INFO] 2025/08/25 00:33:39 logger.go:38: Server stopped gracefully
+[INFO] 2025/08/25 00:33:39 logger.go:38: Cron service stopped
+[INFO] 2025/08/25 00:44:28 logger.go:38: Claude Code Relay started
+[INFO] 2025/08/25 00:44:33 logger.go:38: Database initialized successfully
+[INFO] 2025/08/25 00:44:34 logger.go:38: Redis connection established
+[INFO] 2025/08/25 00:44:34 logger.go:38: Cron service started successfully
+[INFO] 2025/08/25 00:44:34 logger.go:38: Server starting on port 8080
+[INFO] 2025/08/25 00:45:19 logger.go:38: ✅ 账号 鸭子hk 请求成功，状态码: 200，TTFB: 24.254356802s，总耗时: 24.317382136s，模式: 流式，数据大小: 1026B
+[INFO] 2025/08/25 00:46:14 logger.go:38: ✅ 账号 鸭子sg 请求成功，状态码: 200，TTFB: 24.655552137s，总耗时: 24.723165428s，模式: 流式，数据大小: 1250B
+[INFO] 2025/08/25 00:50:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 00:52:33 logger.go:38: Shutting down server...
+[INFO] 2025/08/25 00:52:33 logger.go:38: Cron service stopped
+[INFO] 2025/08/25 00:52:33 logger.go:38: Server stopped gracefully
+[INFO] 2025/08/25 00:52:33 logger.go:38: Cron service stopped
+[INFO] 2025/08/25 00:57:00 logger.go:38: Claude Code Relay started
+[INFO] 2025/08/25 00:57:04 logger.go:38: Database initialized successfully
+[INFO] 2025/08/25 00:57:04 logger.go:38: Redis connection established
+[INFO] 2025/08/25 00:57:04 logger.go:38: Cron service started successfully
+[INFO] 2025/08/25 00:57:04 logger.go:38: Server starting on port 8080
+[INFO] 2025/08/25 01:00:00 logger.go:38: Starting expired logs cleanup task
+[INFO] 2025/08/25 01:00:00 logger.go:38: Starting abnormal accounts recovery task
+[INFO] 2025/08/25 01:00:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/25 01:00:00 logger.go:38: Cleaned expired logs successfully, deleted 0 records (older than 3 months)
+[INFO] 2025/08/25 01:00:00 logger.go:38: Expired logs cleanup task completed in 61.324125ms
+[INFO] 2025/08/25 01:02:52 logger.go:38: ✅ 账号 鸭子hk 请求成功，状态码: 200，TTFB: 18.575980009s，总耗时: 19.185809801s，模式: 非流式，数据大小: 1824B
+[INFO] 2025/08/25 01:03:54 logger.go:38: ✅ 账号 鸭子hk 请求成功，状态码: 200，TTFB: 11.311268589s，总耗时: 11.370775714s，模式: 非流式，数据大小: 1020B
+[INFO] 2025/08/25 01:04:57 logger.go:38: ✅ 账号 鸭子hk 请求成功，状态码: 200，TTFB: 13.481202382s，总耗时: 13.545069215s，模式: 非流式，数据大小: 1023B

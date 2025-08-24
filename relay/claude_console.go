@@ -12,7 +12,6 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/sjson"
-	"github.com/tidwall/gjson"
 	"io"
 	"log"
 	"net/http"
@@ -79,11 +78,8 @@ func HandleClaudeConsoleRequest(c *gin.Context, account *model.Account, requestB
 		return
 	}
 
-	// 检测请求是否为流式
-	isStream := true // 默认流式
-	if gjson.GetBytes(body, "stream").Exists() {
-		isStream = gjson.GetBytes(body, "stream").Bool()
-	}
+	// 根据响应Content-Type判断是否为流式
+	isStream := isConsoleStreamResponse(resp)
 	
 	usageTokens := handleConsoleSuccessResponse(c, resp, responseReader, isStream)
 
@@ -114,17 +110,18 @@ func extractConsoleAPIKey(c *gin.Context) *model.ApiKey {
 	return nil
 }
 
+// isConsoleStreamResponse 根据响应的Content-Type判断是否为流式响应
+func isConsoleStreamResponse(resp *http.Response) bool {
+	contentType := resp.Header.Get("Content-Type")
+	return strings.Contains(contentType, "text/event-stream") || 
+		   strings.Contains(contentType, "text/plain") ||
+		   strings.Contains(contentType, "application/x-ndjson")
+}
+
 // parseConsoleRequest 解析Console请求
 func parseConsoleRequest(requestBody []byte) ([]byte, error) {
-	// 检查用户是否已经设置了stream参数，如果没有则默认设置为true（保持向后兼容）
-	var body []byte
-	if !gjson.GetBytes(requestBody, "stream").Exists() {
-		body, _ = sjson.SetBytes(requestBody, "stream", true) // 默认流式请求
-	} else {
-		// 用户已经设置了stream参数，保持不变
-		body = requestBody
-	}
-	body, _ = sjson.SetBytes(body, "metadata.user_id", common.GetInstanceID()) // 设置用户ID为实例ID
+	// 只添加metadata，不修改stream参数，让服务端根据实际需要返回流式或非流式
+	body, _ := sjson.SetBytes(requestBody, "metadata.user_id", common.GetInstanceID()) // 设置用户ID为实例ID
 	return body, nil
 }
 

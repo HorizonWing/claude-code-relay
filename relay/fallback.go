@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/tidwall/gjson"
 )
 
 // FallbackStrategy 定义fallback策略
@@ -422,12 +421,6 @@ type StreamingResponseCapture struct {
 
 // NewStreamingResponseCapture 创建流式响应捕获器
 func NewStreamingResponseCapture(writer gin.ResponseWriter, startTime time.Time, requestBody []byte) *StreamingResponseCapture {
-	// 检测是否为流式模式
-	isStreamMode := true // 默认流式
-	if gjson.GetBytes(requestBody, "stream").Exists() {
-		isStreamMode = gjson.GetBytes(requestBody, "stream").Bool()
-	}
-	
 	return &StreamingResponseCapture{
 		ResponseWriter:  writer,
 		statusCode:      200,
@@ -436,10 +429,18 @@ func NewStreamingResponseCapture(writer gin.ResponseWriter, startTime time.Time,
 		headersCopied:   false,
 		startTime:       startTime,
 		hasReceivedData: false,
-		isStreamMode:    isStreamMode,
+		isStreamMode:    false, // 初始化为false，等收到响应后再判断
 		totalDataSize:   0,
 		upstreamHeaders: make(http.Header),
 	}
+}
+
+// isFallbackStreamResponse 根据响应的Content-Type判断是否为流式响应  
+func isFallbackStreamResponse(header http.Header) bool {
+	contentType := header.Get("Content-Type")
+	return strings.Contains(contentType, "text/event-stream") || 
+		   strings.Contains(contentType, "text/plain") ||
+		   strings.Contains(contentType, "application/x-ndjson")
 }
 
 // Header 拦截Header方法，缓存上游响应头
@@ -462,6 +463,12 @@ func (w *StreamingResponseCapture) WriteHeader(statusCode int) {
 	w.statusCode = statusCode
 	w.isSuccess = statusCode >= 200 && statusCode < 400
 	
+	// 在收到响应头时根据Content-Type判断是否为流式模式
+	if !w.headersCopied {
+		w.isStreamMode = isFallbackStreamResponse(w.ResponseWriter.Header())
+		w.headersCopied = true
+	}
+	
 	if w.isStreamMode {
 		// 流式模式：如果成功立即设置响应头启动流式输出
 		if w.isSuccess && !w.headerSet {
@@ -478,6 +485,12 @@ func (w *StreamingResponseCapture) WriteHeader(statusCode int) {
 func (w *StreamingResponseCapture) Write(data []byte) (int, error) {
 	if len(data) == 0 {
 		return 0, nil
+	}
+	
+	// 如果还没有判断过流式模式，在首次写入时判断
+	if !w.headersCopied {
+		w.isStreamMode = isFallbackStreamResponse(w.ResponseWriter.Header())
+		w.headersCopied = true
 	}
 	
 	// 记录首次数据到达时间
