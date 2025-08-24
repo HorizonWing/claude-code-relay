@@ -141,3 +141,4 @@
 [INFO] 2025/08/24 22:27:55 logger.go:38: Redis connection established
 [INFO] 2025/08/24 22:27:55 logger.go:38: Cron service started successfully
 [INFO] 2025/08/24 22:27:55 logger.go:38: Server starting on port 8080
+[INFO] 2025/08/24 22:28:21 logger.go:38: ✅ 账号 鸭子 请求成功，状态码: 200，TTFB: 19.796656218s，总耗时: 20.081660676s，模式: 非流式，数据大小: 1116B
