@@ -9,10 +9,12 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/tidwall/gjson"
 )
 
 // FallbackStrategy 定义fallback策略
@@ -268,7 +270,8 @@ func (h *FallbackHandler) executeFallback(c *gin.Context, accounts []model.Accou
 		result := h.executeSingleRequest(c, &account, requestBody, requestFunc, attemptStartTime)
 		
 		if result.Success {
-			log.Printf("✅ 账号 %s 请求成功，耗时: %v，流式输出已完成", account.Name, result.Duration)
+			// 记录成功的日志，TTFB信息已经在executeSingleRequest中记录
+			log.Printf("✅ 账号 %s fallback请求成功，总耗时: %v，流式输出已完成", account.Name, result.Duration)
 			// 成功时，HTTP响应已经通过流式方式实时写入客户端，直接返回结果
 			return result
 		}
@@ -304,10 +307,10 @@ func (h *FallbackHandler) executeFallback(c *gin.Context, accounts []model.Accou
 	}
 }
 
-// executeSingleRequest 执行单个账号请求（支持真正的流式输出）
+// executeSingleRequest 执行单个账号请求（支持流式和非流式模式）
 func (h *FallbackHandler) executeSingleRequest(c *gin.Context, account *model.Account, requestBody []byte, requestFunc RequestFunc, startTime time.Time) *FallbackResult {
-	// 创建流式响应捕获器
-	capture := NewStreamingResponseCapture(c.Writer)
+	// 创建自适应响应捕获器，传入请求开始时间和请求体（用于检测流式模式）
+	capture := NewStreamingResponseCapture(c.Writer, startTime, requestBody)
 	originalWriter := c.Writer
 	
 	// 临时替换Writer
@@ -332,13 +335,30 @@ func (h *FallbackHandler) executeSingleRequest(c *gin.Context, account *model.Ac
 	}
 
 	if capture.isSuccess {
-		// 成功时流式数据已经直接写入客户端，无需再次处理
-		common.SysLog(fmt.Sprintf("✅ 账号 %s 请求成功，状态码: %d，实现真正流式输出", account.Name, capture.statusCode))
+		// 如果是非流式模式，需要输出缓存的数据
+		if !capture.isStreamMode {
+			capture.FlushNonStreamResponse()
+		}
+		
+		// 获取首次响应时间和模式信息
+		ttfb := capture.GetFirstByteTime()
+		modeStr := "流式"
+		if !capture.isStreamMode {
+			modeStr = "非流式"
+		}
+		
+		if ttfb != nil {
+			common.SysLog(fmt.Sprintf("✅ 账号 %s 请求成功，状态码: %d，TTFB: %v，总耗时: %v，模式: %s，数据大小: %dB", 
+				account.Name, capture.statusCode, *ttfb, result.Duration, modeStr, capture.totalDataSize))
+		} else {
+			common.SysLog(fmt.Sprintf("✅ 账号 %s 请求成功，状态码: %d，总耗时: %v，模式: %s，数据大小: %dB", 
+				account.Name, capture.statusCode, result.Duration, modeStr, capture.totalDataSize))
+		}
 	} else {
 		// 失败时获取缓存的错误信息
 		result.ErrorMessage = string(capture.GetBufferedData())
-		common.SysError(fmt.Sprintf("❌ 账号 %s 请求失败，状态码: %d，错误: %s", 
-			account.Name, capture.statusCode, result.ErrorMessage))
+		common.SysError(fmt.Sprintf("❌ 账号 %s 请求失败，状态码: %d，耗时: %v，错误: %s", 
+			account.Name, capture.statusCode, result.Duration, result.ErrorMessage))
 	}
 
 	return result
@@ -384,30 +404,57 @@ func (h *FallbackHandler) GetAccountStats(accountID uint) map[string]interface{}
 // RequestFunc 请求函数类型
 type RequestFunc func(c *gin.Context, account *model.Account, requestBody []byte)
 
-// StreamingResponseCapture 流式响应捕获器
+// StreamingResponseCapture 流式响应捕获器（支持流式和非流式模式）
 type StreamingResponseCapture struct {
 	gin.ResponseWriter
-	statusCode int
-	isSuccess  bool
-	buffer     *bytes.Buffer
-	headerSet  bool
-	headersCopied bool  // 新增：标记是否已复制响应头
+	statusCode       int
+	isSuccess        bool
+	buffer           *bytes.Buffer
+	headerSet        bool
+	headersCopied    bool         // 新增：标记是否已复制响应头
+	startTime        time.Time    // 请求开始时间
+	firstByteTime    *time.Time   // 首次数据到达时间
+	hasReceivedData  bool         // 是否已接收到数据
+	isStreamMode     bool         // 是否为流式模式
+	totalDataSize    int          // 总数据大小
+	upstreamHeaders  http.Header  // 新增：缓存上游响应头
 }
 
 // NewStreamingResponseCapture 创建流式响应捕获器
-func NewStreamingResponseCapture(writer gin.ResponseWriter) *StreamingResponseCapture {
+func NewStreamingResponseCapture(writer gin.ResponseWriter, startTime time.Time, requestBody []byte) *StreamingResponseCapture {
+	// 检测是否为流式模式
+	isStreamMode := true // 默认流式
+	if gjson.GetBytes(requestBody, "stream").Exists() {
+		isStreamMode = gjson.GetBytes(requestBody, "stream").Bool()
+	}
+	
 	return &StreamingResponseCapture{
-		ResponseWriter: writer,
-		statusCode:     200,
-		buffer:         bytes.NewBuffer([]byte{}),
-		headerSet:      false,
-		headersCopied:  false,
+		ResponseWriter:  writer,
+		statusCode:      200,
+		buffer:          bytes.NewBuffer([]byte{}),
+		headerSet:       false,
+		headersCopied:   false,
+		startTime:       startTime,
+		hasReceivedData: false,
+		isStreamMode:    isStreamMode,
+		totalDataSize:   0,
+		upstreamHeaders: make(http.Header),
 	}
 }
 
-// Header 拦截Header方法，确保成功时能正确设置流式响应头
+// Header 拦截Header方法，缓存上游响应头
 func (w *StreamingResponseCapture) Header() http.Header {
 	return w.ResponseWriter.Header()
+}
+
+// CacheUpstreamHeaders 缓存上游响应头（在非流式模式下使用）
+func (w *StreamingResponseCapture) CacheUpstreamHeaders() {
+	if !w.isStreamMode {
+		// 复制当前响应头到缓存
+		for name, values := range w.ResponseWriter.Header() {
+			w.upstreamHeaders[name] = values
+		}
+	}
 }
 
 // WriteHeader 捕获状态码并判断是否成功
@@ -415,51 +462,110 @@ func (w *StreamingResponseCapture) WriteHeader(statusCode int) {
 	w.statusCode = statusCode
 	w.isSuccess = statusCode >= 200 && statusCode < 400
 	
-	// 如果是成功响应，立即设置响应头启动流式输出
-	if w.isSuccess && !w.headerSet {
-		w.ResponseWriter.WriteHeader(statusCode)
-		w.headerSet = true
+	if w.isStreamMode {
+		// 流式模式：如果成功立即设置响应头启动流式输出
+		if w.isSuccess && !w.headerSet {
+			w.ResponseWriter.WriteHeader(statusCode)
+			w.headerSet = true
+		}
+	} else {
+		// 非流式模式：先缓存响应头，不立即输出
+		w.CacheUpstreamHeaders()
 	}
 }
 
-// Write 写入响应体
+// Write 写入响应体（根据流式/非流式模式采用不同策略）
 func (w *StreamingResponseCapture) Write(data []byte) (int, error) {
 	if len(data) == 0 {
 		return 0, nil
 	}
 	
-	if w.isSuccess && w.headerSet {
-		// 成功时直接流式写入，实现真正的流式输出
-		n, err := w.ResponseWriter.Write(data)
-		if err == nil {
-			// 立即刷新以确保流式输出
-			if flusher, ok := w.ResponseWriter.(interface{ Flush() }); ok {
-				flusher.Flush()
+	// 记录首次数据到达时间
+	if !w.hasReceivedData {
+		now := time.Now()
+		w.firstByteTime = &now
+		w.hasReceivedData = true
+	}
+	
+	// 累计数据大小
+	w.totalDataSize += len(data)
+	
+	if w.isStreamMode {
+		// 流式模式：成功时立即输出，失败时缓存
+		if w.isSuccess && w.headerSet {
+			// 成功的流式输出：直接写入并立即刷新
+			n, err := w.ResponseWriter.Write(data)
+			if err == nil {
+				if flusher, ok := w.ResponseWriter.(interface{ Flush() }); ok {
+					flusher.Flush()
+				}
 			}
-		}
-		return n, err
-	} else if w.isSuccess && !w.headerSet {
-		// 第一次成功写入时，先设置响应头
-		w.ResponseWriter.WriteHeader(w.statusCode)
-		w.headerSet = true
-		
-		// 然后写入数据
-		n, err := w.ResponseWriter.Write(data)
-		if err == nil {
-			if flusher, ok := w.ResponseWriter.(interface{ Flush() }); ok {
-				flusher.Flush()
+			return n, err
+		} else if w.isSuccess && !w.headerSet {
+			// 首次成功写入：设置响应头后写入
+			w.ResponseWriter.WriteHeader(w.statusCode)
+			w.headerSet = true
+			
+			n, err := w.ResponseWriter.Write(data)
+			if err == nil {
+				if flusher, ok := w.ResponseWriter.(interface{ Flush() }); ok {
+					flusher.Flush()
+				}
 			}
+			return n, err
+		} else {
+			// 失败时缓存数据
+			return w.buffer.Write(data)
 		}
-		return n, err
 	} else {
-		// 失败时缓存数据，不写入响应
+		// 非流式模式：无论成功失败都先缓存，等请求完成后再决定如何处理
 		return w.buffer.Write(data)
 	}
 }
 
-// GetBufferedData 获取缓存的数据（仅用于失败情况）
+// GetBufferedData 获取缓存的数据
 func (w *StreamingResponseCapture) GetBufferedData() []byte {
 	return w.buffer.Bytes()
+}
+
+// FlushNonStreamResponse 输出非流式响应的缓存数据（仅在成功且非流式模式下调用）
+func (w *StreamingResponseCapture) FlushNonStreamResponse() error {
+	if !w.isStreamMode && w.isSuccess {
+		// 复制缓存的上游响应头到最终响应
+		for name, values := range w.upstreamHeaders {
+			// 跳过content-length，让gin自动处理
+			if strings.ToLower(name) != "content-length" {
+				for _, value := range values {
+					w.ResponseWriter.Header().Add(name, value)
+				}
+			}
+		}
+		
+		// 确保设置正确的Content-Type（如果上游没有提供）
+		if w.ResponseWriter.Header().Get("Content-Type") == "" {
+			w.ResponseWriter.Header().Set("Content-Type", "application/json")
+		}
+		
+		// 设置响应状态码
+		if !w.headerSet {
+			w.ResponseWriter.WriteHeader(w.statusCode)
+			w.headerSet = true
+		}
+		
+		// 输出所有缓存的数据
+		_, err := w.ResponseWriter.Write(w.buffer.Bytes())
+		return err
+	}
+	return nil
+}
+
+// GetFirstByteTime 获取首次响应时间(TTFB - Time To First Byte)
+func (w *StreamingResponseCapture) GetFirstByteTime() *time.Duration {
+	if w.firstByteTime == nil {
+		return nil
+	}
+	ttfb := w.firstByteTime.Sub(w.startTime)
+	return &ttfb
 }
 
 // min 辅助函数

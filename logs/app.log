@@ -77,3 +77,54 @@
 [INFO] 2025/08/24 21:50:52 logger.go:38: Server starting on port 8080
 [ERROR] 2025/08/24 21:50:58 logger.go:46: ❌ 账号 鸭子 请求失败，状态码: 500，错误: {"error":{"message":"网络连接错误: Post \"https://sg.instcopilot-api.com1/v1/messages\": dial tcp: lookup sg.instcopilot-api.com1 on 127.0.0.11:53: no such host","type":"network_error"}}
 [INFO] 2025/08/24 21:51:13 logger.go:38: ✅ 账号 柏拉图cc 请求成功，状态码: 200，实现真正流式输出
+[INFO] 2025/08/24 21:53:47 logger.go:38: Shutting down server...
+[INFO] 2025/08/24 21:53:47 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 21:53:47 logger.go:38: Server stopped gracefully
+[INFO] 2025/08/24 21:53:47 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 21:53:48 logger.go:38: Claude Code Relay started
+[INFO] 2025/08/24 21:53:51 logger.go:38: Database initialized successfully
+[INFO] 2025/08/24 21:53:51 logger.go:38: Redis connection established
+[INFO] 2025/08/24 21:53:51 logger.go:38: Cron service started successfully
+[INFO] 2025/08/24 21:53:51 logger.go:38: Server starting on port 8080
+[INFO] 2025/08/24 21:56:10 logger.go:38: Shutting down server...
+[INFO] 2025/08/24 21:56:10 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 21:56:10 logger.go:38: Server stopped gracefully
+[INFO] 2025/08/24 21:56:10 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 21:56:27 logger.go:38: Claude Code Relay started
+[INFO] 2025/08/24 21:56:31 logger.go:38: Database initialized successfully
+[INFO] 2025/08/24 21:56:31 logger.go:38: Redis connection established
+[INFO] 2025/08/24 21:56:31 logger.go:38: Cron service started successfully
+[INFO] 2025/08/24 21:56:31 logger.go:38: Server starting on port 8080
+[ERROR] 2025/08/24 21:56:40 logger.go:46: ❌ 账号 鸭子 请求失败，状态码: 500，耗时: 29.412834ms，错误: {"error":{"message":"网络连接错误: Post \"https://sg.instcopilot-api.com1/v1/messages\": dial tcp: lookup sg.instcopilot-api.com1 on 127.0.0.11:53: no such host","type":"network_error"}}
+[INFO] 2025/08/24 21:56:59 logger.go:38: ✅ 账号 柏拉图cc 请求成功，状态码: 200，TTFB: 11.800220089s，总耗时: 19.389795301s，实现真正流式输出
+[ERROR] 2025/08/24 21:58:08 logger.go:46: ❌ 账号 鸭子 请求失败，状态码: 500，耗时: 39.974125ms，错误: {"error":{"message":"网络连接错误: Post \"https://sg.instcopilot-api.com1/v1/messages\": dial tcp: lookup sg.instcopilot-api.com1 on 127.0.0.11:53: no such host: Post \"https://sg.instcopilot-api.com1/v1/messages\": dial tcp: lookup sg.instcopilot-api.com1 on 127.0.0.11:53: no such host","type":"network_error"}}
+[INFO] 2025/08/24 21:58:21 logger.go:38: ✅ 账号 柏拉图cc 请求成功，状态码: 200，TTFB: 9.327024754s，总耗时: 13.213972089s，实现真正流式输出
+[ERROR] 2025/08/24 21:58:46 logger.go:46: ❌ 账号 鸭子 请求失败，状态码: 500，耗时: 19.917458ms，错误: {"error":{"message":"网络连接错误: Post \"https://sg.instcopilot-api.com1/v1/messages\": dial tcp: lookup sg.instcopilot-api.com1 on 127.0.0.11:53: no such host: Post \"https://sg.instcopilot-api.com1/v1/messages\": dial tcp: lookup sg.instcopilot-api.com1 on 127.0.0.11:53: no such host: Post \"https://sg.instcopilot-api.com1/v1/messages\": dial tcp: lookup sg.instcopilot-api.com1 on 127.0.0.11:53: no such host","type":"network_error"}}
+[INFO] 2025/08/24 21:58:58 logger.go:38: ✅ 账号 柏拉图cc 请求成功，状态码: 200，TTFB: 8.358537462s，总耗时: 12.850399839s，实现真正流式输出
+[INFO] 2025/08/24 22:00:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/24 22:00:00 logger.go:38: Starting abnormal accounts recovery task
+[INFO] 2025/08/24 22:04:50 logger.go:38: Shutting down server...
+[INFO] 2025/08/24 22:04:50 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 22:04:50 logger.go:38: Server stopped gracefully
+[INFO] 2025/08/24 22:04:50 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 22:04:50 logger.go:38: Claude Code Relay started
+[INFO] 2025/08/24 22:04:54 logger.go:38: Database initialized successfully
+[INFO] 2025/08/24 22:04:54 logger.go:38: Redis connection established
+[INFO] 2025/08/24 22:04:54 logger.go:38: Cron service started successfully
+[INFO] 2025/08/24 22:04:54 logger.go:38: Server starting on port 8080
+[ERROR] 2025/08/24 22:06:26 logger.go:46: ❌ 账号 鸭子 请求失败，状态码: 500，耗时: 31.064583ms，错误: {"error":{"message":"网络连接错误: Post \"https://sg.instcopilot-api.com1/v1/messages\": dial tcp: lookup sg.instcopilot-api.com1 on 127.0.0.11:53: no such host","type":"network_error"}}
+[INFO] 2025/08/24 22:06:44 logger.go:38: ✅ 账号 柏拉图cc 请求成功，状态码: 200，TTFB: 18.1343448s，总耗时: 18.187970258s，模式: 非流式，数据大小: 1868B
+[ERROR] 2025/08/24 22:07:11 logger.go:46: ❌ 账号 鸭子 请求失败，状态码: 500，耗时: 28.373292ms，错误: {"error":{"message":"网络连接错误: Post \"https://sg.instcopilot-api.com1/v1/messages\": dial tcp: lookup sg.instcopilot-api.com1 on 127.0.0.11:53: no such host: Post \"https://sg.instcopilot-api.com1/v1/messages\": dial tcp: lookup sg.instcopilot-api.com1 on 127.0.0.11:53: no such host","type":"network_error"}}
+[INFO] 2025/08/24 22:07:25 logger.go:38: ✅ 账号 柏拉图cc 请求成功，状态码: 200，TTFB: 9.890183088s，总耗时: 14.198764631s，模式: 流式，数据大小: 6978B
+[ERROR] 2025/08/24 22:08:03 logger.go:46: ❌ 账号 鸭子 请求失败，状态码: 500，耗时: 24.35875ms，错误: {"error":{"message":"网络连接错误: Post \"https://sg.instcopilot-api.com1/v1/messages\": dial tcp: lookup sg.instcopilot-api.com1 on 127.0.0.11:53: no such host: Post \"https://sg.instcopilot-api.com1/v1/messages\": dial tcp: lookup sg.instcopilot-api.com1 on 127.0.0.11:53: no such host: Post \"https://sg.instcopilot-api.com1/v1/messages\": dial tcp: lookup sg.instcopilot-api.com1 on 127.0.0.11:53: no such host","type":"network_error"}}
+[INFO] 2025/08/24 22:08:26 logger.go:38: ✅ 账号 柏拉图cc 请求成功，状态码: 200，TTFB: 15.444277216s，总耗时: 22.50916851s，模式: 流式，数据大小: 6889B
+[INFO] 2025/08/24 22:10:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/24 22:10:02 logger.go:38: Shutting down server...
+[INFO] 2025/08/24 22:10:02 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 22:10:02 logger.go:38: Server stopped gracefully
+[INFO] 2025/08/24 22:10:02 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 22:10:02 logger.go:38: Claude Code Relay started
+[INFO] 2025/08/24 22:10:06 logger.go:38: Database initialized successfully
+[INFO] 2025/08/24 22:10:06 logger.go:38: Redis connection established
+[INFO] 2025/08/24 22:10:06 logger.go:38: Cron service started successfully
+[INFO] 2025/08/24 22:10:06 logger.go:38: Server starting on port 8080

@@ -138,10 +138,16 @@ func extractAPIKey(c *gin.Context) *model.ApiKey {
 
 // prepareRequestBody 准备请求体，添加必要的字段
 func prepareRequestBody(requestBody []byte) *requestData {
-	body, _ := sjson.SetBytes(requestBody, "stream", true)                     // 强制流式输出
-	body, _ = sjson.SetBytes(body, "metadata.user_id", common.GetInstanceID()) // 设置固定的用户ID
-
-	return &requestData{Body: body}
+	// 检查用户是否已经设置了stream参数，如果没有则默认设置为true（保持向后兼容）
+	if !gjson.GetBytes(requestBody, "stream").Exists() {
+		body, _ := sjson.SetBytes(requestBody, "stream", true) // 默认流式输出
+		body, _ = sjson.SetBytes(body, "metadata.user_id", common.GetInstanceID()) // 设置固定的用户ID
+		return &requestData{Body: body}
+	} else {
+		// 用户已经设置了stream参数，保持不变，只添加metadata
+		body, _ := sjson.SetBytes(requestBody, "metadata.user_id", common.GetInstanceID()) // 设置固定的用户ID
+		return &requestData{Body: body}
+	}
 }
 
 // createHTTPClient 创建HTTP客户端

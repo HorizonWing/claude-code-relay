@@ -12,6 +12,7 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/sjson"
+	"github.com/tidwall/gjson"
 	"io"
 	"log"
 	"net/http"
@@ -109,7 +110,14 @@ func extractConsoleAPIKey(c *gin.Context) *model.ApiKey {
 
 // parseConsoleRequest 解析Console请求
 func parseConsoleRequest(requestBody []byte) ([]byte, error) {
-	body, _ := sjson.SetBytes(requestBody, "stream", true)                     // 设置流式请求
+	// 检查用户是否已经设置了stream参数，如果没有则默认设置为true（保持向后兼容）
+	var body []byte
+	if !gjson.GetBytes(requestBody, "stream").Exists() {
+		body, _ = sjson.SetBytes(requestBody, "stream", true) // 默认流式请求
+	} else {
+		// 用户已经设置了stream参数，保持不变
+		body = requestBody
+	}
 	body, _ = sjson.SetBytes(body, "metadata.user_id", common.GetInstanceID()) // 设置用户ID为实例ID
 	return body, nil
 }
