@@ -128,3 +128,16 @@
 [INFO] 2025/08/24 22:10:06 logger.go:38: Redis connection established
 [INFO] 2025/08/24 22:10:06 logger.go:38: Cron service started successfully
 [INFO] 2025/08/24 22:10:06 logger.go:38: Server starting on port 8080
+[INFO] 2025/08/24 22:12:20 logger.go:38: ✅ 账号 鸭子 请求成功，状态码: 200，TTFB: 9.306613379s，总耗时: 16.550808841s，模式: 流式，数据大小: 3334B
+[INFO] 2025/08/24 22:16:11 logger.go:38: ✅ 账号 鸭子 请求成功，状态码: 200，TTFB: 9.112017088s，总耗时: 15.475905466s，模式: 流式，数据大小: 3463B
+[INFO] 2025/08/24 22:16:32 logger.go:38: ✅ 账号 鸭子 请求成功，状态码: 200，TTFB: 11.882343213s，总耗时: 11.949062505s，模式: 非流式，数据大小: 872B
+[INFO] 2025/08/24 22:20:00 logger.go:38: Starting rate limit expired accounts check task
+[INFO] 2025/08/24 22:27:30 logger.go:38: Shutting down server...
+[INFO] 2025/08/24 22:27:30 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 22:27:30 logger.go:38: Server stopped gracefully
+[INFO] 2025/08/24 22:27:30 logger.go:38: Cron service stopped
+[INFO] 2025/08/24 22:27:48 logger.go:38: Claude Code Relay started
+[INFO] 2025/08/24 22:27:55 logger.go:38: Database initialized successfully
+[INFO] 2025/08/24 22:27:55 logger.go:38: Redis connection established
+[INFO] 2025/08/24 22:27:55 logger.go:38: Cron service started successfully
+[INFO] 2025/08/24 22:27:55 logger.go:38: Server starting on port 8080

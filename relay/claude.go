@@ -109,7 +109,12 @@ func HandleClaudeRequest(c *gin.Context, account *model.Account, requestBody []b
 
 	var usageTokens *common.TokenUsage
 	if resp.StatusCode < statusBadRequest {
-		usageTokens = handleSuccessResponse(c, resp, responseReader)
+		// 检测请求是否为流式
+		isStream := true // 默认流式
+		if gjson.GetBytes(requestData.Body, "stream").Exists() {
+			isStream = gjson.GetBytes(requestData.Body, "stream").Bool()
+		}
+		usageTokens = handleSuccessResponse(c, resp, responseReader, isStream)
 	} else {
 		handleErrorResponse(c, resp, responseReader, account)
 	}
@@ -259,20 +264,42 @@ func createResponseReader(resp *http.Response) (io.Reader, error) {
 	}
 }
 
-// handleSuccessResponse 处理成功响应
-func handleSuccessResponse(c *gin.Context, resp *http.Response, responseReader io.Reader) *common.TokenUsage {
+// handleSuccessResponse 处理成功响应（支持流式和非流式模式）
+func handleSuccessResponse(c *gin.Context, resp *http.Response, responseReader io.Reader, isStream bool) *common.TokenUsage {
 	c.Status(resp.StatusCode)
 	copyResponseHeaders(c, resp)
-	setStreamResponseHeaders(c)
+	
+	if isStream {
+		// 流式模式：设置流式响应头并实时传输
+		setStreamResponseHeaders(c)
+		c.Writer.Flush()
 
-	c.Writer.Flush()
+		usageTokens, err := common.ParseStreamResponse(c.Writer, responseReader)
+		if err != nil {
+			log.Println("stream copy and parse failed:", err.Error())
+		}
+		return usageTokens
+	} else {
+		// 非流式模式：设置JSON响应头并一次性传输
+		c.Header("Content-Type", "application/json")
 
-	usageTokens, err := common.ParseStreamResponse(c.Writer, responseReader)
-	if err != nil {
-		log.Println("stream copy and parse failed:", err.Error())
+		// 读取所有响应数据
+		responseData, err := io.ReadAll(responseReader)
+		if err != nil {
+			log.Printf("read non-stream response failed: %v", err)
+			return nil
+		}
+
+		// 一次性写入响应
+		c.Data(resp.StatusCode, "application/json", responseData)
+
+		// 解析响应中的usage信息
+		usageTokens, err := common.ParseJSONResponse(responseData)
+		if err != nil {
+			log.Printf("parse non-stream response usage failed: %v", err)
+		}
+		return usageTokens
 	}
-
-	return usageTokens
 }
 
 // handleErrorResponse 处理错误响应

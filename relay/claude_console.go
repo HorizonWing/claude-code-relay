@@ -79,7 +79,13 @@ func HandleClaudeConsoleRequest(c *gin.Context, account *model.Account, requestB
 		return
 	}
 
-	usageTokens := handleConsoleSuccessResponse(c, resp, responseReader)
+	// 检测请求是否为流式
+	isStream := true // 默认流式
+	if gjson.GetBytes(body, "stream").Exists() {
+		isStream = gjson.GetBytes(body, "stream").Bool()
+	}
+	
+	usageTokens := handleConsoleSuccessResponse(c, resp, responseReader, isStream)
 
 	// 更新账号状态
 	accountService := service.NewAccountService()
@@ -252,24 +258,46 @@ func createConsoleResponseReader(resp *http.Response) (io.Reader, error) {
 	}
 }
 
-// handleConsoleSuccessResponse 处理Console成功响应
-func handleConsoleSuccessResponse(c *gin.Context, resp *http.Response, responseReader io.Reader) *common.TokenUsage {
+// handleConsoleSuccessResponse 处理Console成功响应（支持流式和非流式模式）
+func handleConsoleSuccessResponse(c *gin.Context, resp *http.Response, responseReader io.Reader, isStream bool) *common.TokenUsage {
 	if (resp.StatusCode < consoleStatusOK || resp.StatusCode >= consoleStatusBadRequest) || responseReader == nil {
 		return nil
 	}
 
 	c.Status(resp.StatusCode)
 	copyConsoleResponseHeaders(c, resp)
-	setConsoleStreamResponseHeaders(c)
+	
+	if isStream {
+		// 流式模式：设置流式响应头并实时传输
+		setConsoleStreamResponseHeaders(c)
+		c.Writer.Flush()
 
-	c.Writer.Flush()
+		usageTokens, err := common.ParseStreamResponse(c.Writer, responseReader)
+		if err != nil {
+			log.Println("stream copy and parse failed:", err.Error())
+		}
+		return usageTokens
+	} else {
+		// 非流式模式：设置JSON响应头并一次性传输
+		c.Header("Content-Type", "application/json")
 
-	usageTokens, err := common.ParseStreamResponse(c.Writer, responseReader)
-	if err != nil {
-		log.Println("stream copy and parse failed:", err.Error())
+		// 读取所有响应数据
+		responseData, err := io.ReadAll(responseReader)
+		if err != nil {
+			log.Printf("read non-stream console response failed: %v", err)
+			return nil
+		}
+
+		// 一次性写入响应
+		c.Data(resp.StatusCode, "application/json", responseData)
+
+		// 解析响应中的usage信息
+		usageTokens, err := common.ParseJSONResponse(responseData)
+		if err != nil {
+			log.Printf("parse non-stream console response usage failed: %v", err)
+		}
+		return usageTokens
 	}
-
-	return usageTokens
 }
 
 // copyConsoleResponseHeaders 复制Console响应头

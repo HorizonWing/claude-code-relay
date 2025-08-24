@@ -533,13 +533,13 @@ func convertClaudeToOpenAI(claudeReq ClaudeRequest, modelName string) OpenAIRequ
 		}
 	}
 
-	// 构建OpenAI请求（强制流式处理）
+	// 构建OpenAI请求（尊重Claude请求中的stream参数）
 	openaiReq := OpenAIRequest{
 		Model:       modelName,
 		Messages:    openaiMessages,
 		Temperature: claudeReq.Temperature,
 		TopP:        claudeReq.TopP,
-		Stream:      true, // 强制流式处理
+		Stream:      claudeReq.Stream, // 使用Claude请求中的stream设置
 		Stop:        claudeReq.StopSequences,
 	}
 
@@ -639,47 +639,190 @@ func convertOpenAIToClaudeResponse(openaiResp OpenAIResponse, model string) Clau
 	}
 }
 
-// handleStreamingResponse 处理流式响应
+// handleStreamingResponse 处理流式和非流式响应
 func handleStreamingResponse(c *gin.Context, resp *http.Response, model string, isClientStream bool, account *model.Account, apiKey *model.ApiKey, startTime time.Time) {
-	// 设置流式响应头
-	c.Header("Content-Type", "text/event-stream")
-	c.Header("Cache-Control", "no-cache")
-	c.Header("Connection", "keep-alive")
-	c.Writer.Flush()
+	if isClientStream {
+		// 流式模式：设置流式响应头
+		c.Header("Content-Type", "text/event-stream")
+		c.Header("Cache-Control", "no-cache")
+		c.Header("Connection", "keep-alive")
+		c.Writer.Flush()
 
-	// 创建流式转换器并处理OpenAI流式响应
-	transformer := createStreamTransformer(model)
-	usageTokens := processOpenAIStreamResponse(c.Writer, resp.Body, transformer, isClientStream)
+		// 创建流式转换器并处理OpenAI流式响应
+		transformer := createStreamTransformer(model)
+		usageTokens := processOpenAIStreamResponse(c.Writer, resp.Body, transformer, isClientStream)
 
-	// 如果没有usage信息，创建0值的TokenUsage用于日志记录
-	if usageTokens == nil {
+		// 如果没有usage信息，创建0值的TokenUsage用于日志记录
+		if usageTokens == nil {
+			usageTokens = &common.TokenUsage{
+				InputTokens:  0,
+				OutputTokens: 0,
+				Model:        model,
+			}
+		}
+
+		// 更新账号状态和统计信息
+		accountService := service.NewAccountService()
+		go accountService.UpdateAccountStatus(account, resp.StatusCode, usageTokens)
+
+		// 更新API Key统计信息
+		if apiKey != nil {
+			go service.UpdateApiKeyStatus(apiKey, resp.StatusCode, usageTokens)
+		}
+
+		// 记录日志
+		if resp.StatusCode >= 200 && resp.StatusCode < 300 && usageTokens != nil && apiKey != nil {
+			duration := time.Since(startTime).Milliseconds()
+			logService := service.NewLogService()
+			go func() {
+				_, err := logService.CreateLogFromTokenUsage(usageTokens, apiKey.UserID, apiKey.ID, account.ID, duration, isClientStream)
+				if err != nil {
+					log.Printf("保存日志失败: %v", err)
+				}
+			}()
+		}
+	} else {
+		// 非流式模式：设置JSON响应头
+		c.Header("Content-Type", "application/json")
+
+		// 处理非流式响应，直接读取并转换
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": map[string]interface{}{
+					"type":    "response_read_error",
+					"message": "Failed to read response: " + err.Error(),
+				},
+			})
+			return
+		}
+
+		// 解析OpenAI响应并转换为Claude格式
+		claudeResponse, usageTokens := convertOpenAIResponseToClaude(bodyBytes, model)
+		
+		// 如果转换成功，返回Claude格式的响应
+		if claudeResponse != nil {
+			c.JSON(resp.StatusCode, claudeResponse)
+		} else {
+			// 转换失败，直接返回原始响应
+			c.Data(resp.StatusCode, "application/json", bodyBytes)
+		}
+
+		// 如果没有usage信息，创建0值的TokenUsage用于日志记录
+		if usageTokens == nil {
+			usageTokens = &common.TokenUsage{
+				InputTokens:  0,
+				OutputTokens: 0,
+				Model:        model,
+			}
+		}
+
+		// 更新账号状态和统计信息
+		accountService := service.NewAccountService()
+		go accountService.UpdateAccountStatus(account, resp.StatusCode, usageTokens)
+
+		// 更新API Key统计信息
+		if apiKey != nil {
+			go service.UpdateApiKeyStatus(apiKey, resp.StatusCode, usageTokens)
+		}
+
+		// 记录日志
+		if resp.StatusCode >= 200 && resp.StatusCode < 300 && usageTokens != nil && apiKey != nil {
+			duration := time.Since(startTime).Milliseconds()
+			logService := service.NewLogService()
+			go func() {
+				_, err := logService.CreateLogFromTokenUsage(usageTokens, apiKey.UserID, apiKey.ID, account.ID, duration, isClientStream)
+				if err != nil {
+					log.Printf("保存日志失败: %v", err)
+				}
+			}()
+		}
+	}
+}
+
+// convertOpenAIResponseToClaude 将OpenAI非流式响应转换为Claude格式
+func convertOpenAIResponseToClaude(responseBody []byte, model string) (interface{}, *common.TokenUsage) {
+	var openaiResp map[string]interface{}
+	if err := json.Unmarshal(responseBody, &openaiResp); err != nil {
+		return nil, nil
+	}
+
+	// 提取usage信息
+	var usageTokens *common.TokenUsage
+	if usage, ok := openaiResp["usage"].(map[string]interface{}); ok {
 		usageTokens = &common.TokenUsage{
-			InputTokens:  0,
-			OutputTokens: 0,
-			Model:        model,
+			Model: model,
+		}
+		if promptTokens, ok := usage["prompt_tokens"].(float64); ok {
+			usageTokens.InputTokens = int(promptTokens)
+		}
+		if completionTokens, ok := usage["completion_tokens"].(float64); ok {
+			usageTokens.OutputTokens = int(completionTokens)
 		}
 	}
 
-	// 更新账号状态和统计信息
-	accountService := service.NewAccountService()
-	go accountService.UpdateAccountStatus(account, resp.StatusCode, usageTokens)
+	// 转换为Claude格式
+	if choices, ok := openaiResp["choices"].([]interface{}); ok && len(choices) > 0 {
+		if choice, ok := choices[0].(map[string]interface{}); ok {
+			if message, ok := choice["message"].(map[string]interface{}); ok {
+				claudeResponse := map[string]interface{}{
+					"type": "message",
+					"role": "assistant",
+					"model": model,
+				}
 
-	// 更新API Key统计信息
-	if apiKey != nil {
-		go service.UpdateApiKeyStatus(apiKey, resp.StatusCode, usageTokens)
-	}
+				// 处理内容
+				var contentBlocks []map[string]interface{}
+				
+				// 添加文本内容
+				if content, ok := message["content"].(string); ok && content != "" {
+					contentBlocks = append(contentBlocks, map[string]interface{}{
+						"type": "text",
+						"text": content,
+					})
+				}
 
-	// 保存日志记录
-	if resp.StatusCode >= 200 && resp.StatusCode < 300 && apiKey != nil {
-		duration := time.Since(startTime).Milliseconds()
-		logService := service.NewLogService()
-		go func() {
-			_, err := logService.CreateLogFromTokenUsage(usageTokens, apiKey.UserID, apiKey.ID, account.ID, duration, isClientStream)
-			if err != nil {
-				log.Printf("保存日志失败: %v", err)
+				// 处理工具调用
+				if toolCalls, ok := message["tool_calls"].([]interface{}); ok {
+					for _, toolCall := range toolCalls {
+						if tcMap, ok := toolCall.(map[string]interface{}); ok {
+							if function, ok := tcMap["function"].(map[string]interface{}); ok {
+								contentBlocks = append(contentBlocks, map[string]interface{}{
+									"type": "tool_use",
+									"id":   tcMap["id"],
+									"name": function["name"],
+									"input": func() interface{} {
+										if args := function["arguments"]; args != nil {
+											if argsStr, ok := args.(string); ok {
+												var argsMap interface{}
+												json.Unmarshal([]byte(argsStr), &argsMap)
+												return argsMap
+											}
+										}
+										return map[string]interface{}{}
+									}(),
+								})
+							}
+						}
+					}
+				}
+
+				claudeResponse["content"] = contentBlocks
+				
+				// 添加usage信息
+				if usageTokens != nil {
+					claudeResponse["usage"] = map[string]interface{}{
+						"input_tokens":  usageTokens.InputTokens,
+						"output_tokens": usageTokens.OutputTokens,
+					}
+				}
+
+				return claudeResponse, usageTokens
 			}
-		}()
+		}
 	}
+
+	return nil, usageTokens
 }
 
 // processOpenAIStreamResponse 处理OpenAI流式响应并转换为Claude格式
