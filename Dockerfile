@@ -33,10 +33,11 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-w -s' -o 
 # 最终运行阶段
 FROM ubuntu:22.04
 
-# 更新系统并安装必要的包
-RUN apt-get update && \
+# 更新GPG密钥并安装必要的包
+RUN apt-get update --allow-insecure-repositories && \
+    apt-get install -y --allow-unauthenticated ca-certificates && \
+    apt-get update && \
     apt-get install -y \
-    ca-certificates \
     tzdata \
     curl \
     wget \
