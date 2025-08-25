@@ -3,6 +3,9 @@ FROM node:18.18 AS frontend-builder
 
 WORKDIR /app/web
 
+# 设置Node.js内存限制
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
 # 安装pnpm
 RUN npm install -g pnpm
 
@@ -33,18 +36,16 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-w -s' -o 
 # 最终运行阶段
 FROM ubuntu:22.04
 
-# 清理并更新包管理器，安装必要的包
-RUN rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* && \
-    apt-get update --allow-insecure-repositories && \
-    apt-get install -y --no-install-recommends --allow-unauthenticated ca-certificates && \
-    rm -rf /var/cache/apt/archives/* && \
+# 更新GPG密钥并安装必要的包
+RUN apt-get update --allow-insecure-repositories && \
+    apt-get install -y --allow-unauthenticated ca-certificates && \
     apt-get update && \
-    apt-get install -y --no-install-recommends \
+    apt-get install -y \
     tzdata \
     curl \
     wget \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+    && rm -rf /var/lib/apt/lists/*
 
 # 设置时区
 ENV TZ=Asia/Shanghai
