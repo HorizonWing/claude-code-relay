@@ -61,7 +61,12 @@ func main() {
 
 	// 初始化fallback管理器
 	relay.InitFallbackManager(nil)
-	defer relay.CleanupStaleData(time.Hour * 24)
+	defer func() {
+		// 清理fallback管理器资源
+		if relay.GlobalFallbackManager != nil {
+			relay.GlobalFallbackManager.Cleanup()
+		}
+	}()
 
 	// 初始化HTTP服务器
 	server := gin.New()
@@ -111,6 +116,11 @@ func main() {
 
 	// 停止定时任务服务
 	scheduled.StopCronService()
+
+	// 清理fallback管理器
+	if relay.GlobalFallbackManager != nil {
+		relay.GlobalFallbackManager.Cleanup()
+	}
 
 	common.SysLog("Server stopped gracefully")
 }

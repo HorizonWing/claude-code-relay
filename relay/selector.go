@@ -3,6 +3,7 @@ package relay
 import (
 	"claude-code-relay/model"
 	"sort"
+	"sync"
 	"time"
 )
 
@@ -196,6 +197,7 @@ type AdaptiveSelector struct {
 	strategy        FallbackStrategy
 	selector        AccountSelector
 	performanceData map[uint]*PerformanceData
+	mu              sync.RWMutex // 添加锁保护performanceData
 }
 
 // PerformanceData 性能数据
@@ -221,7 +223,11 @@ func (s *AdaptiveSelector) Select(accounts []model.Account) []model.Account {
 	sortedAccounts := s.selector.Select(accounts)
 	
 	// 根据性能数据微调
-	if len(s.performanceData) > 0 {
+	s.mu.RLock()
+	hasData := len(s.performanceData) > 0
+	s.mu.RUnlock()
+	
+	if hasData {
 		s.adjustByPerformance(sortedAccounts)
 	}
 	
@@ -231,8 +237,10 @@ func (s *AdaptiveSelector) Select(accounts []model.Account) []model.Account {
 func (s *AdaptiveSelector) adjustByPerformance(accounts []model.Account) {
 	// 根据性能数据调整账号顺序
 	sort.Slice(accounts, func(i, j int) bool {
+		s.mu.RLock()
 		perfI := s.performanceData[accounts[i].ID]
 		perfJ := s.performanceData[accounts[j].ID]
+		s.mu.RUnlock()
 		
 		if perfI == nil && perfJ == nil {
 			return false
@@ -255,6 +263,9 @@ func (s *AdaptiveSelector) adjustByPerformance(accounts []model.Account) {
 }
 
 func (s *AdaptiveSelector) UpdatePerformance(accountID uint, success bool, responseTime time.Duration) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	
 	perf := s.performanceData[accountID]
 	if perf == nil {
 		perf = &PerformanceData{}
@@ -276,6 +287,72 @@ func (s *AdaptiveSelector) UpdatePerformance(accountID uint, success bool, respo
 		perf.AvgResponseTime = responseTime
 	} else {
 		perf.AvgResponseTime = (perf.AvgResponseTime + responseTime) / 2
+	}
+	
+	// 限制性能数据总量，防止无限增长
+	if len(s.performanceData) > 1000 {
+		s.cleanupOldestData()
+	}
+}
+
+// CleanupOldData 清理过期的性能数据
+func (s *AdaptiveSelector) CleanupOldData(cutoff time.Time) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	
+	for accountID, perf := range s.performanceData {
+		// 如果最近1小时内没有任何活动，删除该数据
+		if perf.LastSuccess.Before(cutoff) && perf.LastFailure.Before(cutoff) {
+			delete(s.performanceData, accountID)
+		}
+	}
+}
+
+// cleanupOldestData 清理最旧的性能数据
+func (s *AdaptiveSelector) cleanupOldestData() {
+	// 找出最旧的10%数据并删除
+	var oldestAccounts []uint
+	now := time.Now()
+	
+	for accountID, perf := range s.performanceData {
+		lastActivity := perf.LastSuccess
+		if perf.LastFailure.After(lastActivity) {
+			lastActivity = perf.LastFailure
+		}
+		
+		// 如果超过24小时没有活动
+		if now.Sub(lastActivity) > time.Hour*24 {
+			oldestAccounts = append(oldestAccounts, accountID)
+		}
+	}
+	
+	// 删除旧数据
+	for _, accountID := range oldestAccounts {
+		delete(s.performanceData, accountID)
+	}
+	
+	// 如果还是太多，删除使用次数最少的
+	if len(s.performanceData) > 800 {
+		type accountUsage struct {
+			id    uint
+			count int64
+		}
+		
+		var usage []accountUsage
+		for id, perf := range s.performanceData {
+			usage = append(usage, accountUsage{id: id, count: perf.TotalRequests})
+		}
+		
+		// 按使用次数排序
+		sort.Slice(usage, func(i, j int) bool {
+			return usage[i].count < usage[j].count
+		})
+		
+		// 删除使用最少的20%
+		deleteCount := len(usage) / 5
+		for i := 0; i < deleteCount && i < len(usage); i++ {
+			delete(s.performanceData, usage[i].id)
+		}
 	}
 }
 

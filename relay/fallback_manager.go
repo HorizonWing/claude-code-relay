@@ -2,6 +2,7 @@ package relay
 
 import (
 	"claude-code-relay/model"
+	"log"
 	"strconv"
 	"sync"
 	"time"
@@ -120,16 +121,18 @@ func (fm *FallbackManager) Cleanup() {
 	fm.mu.Lock()
 	defer fm.mu.Unlock()
 	
-	// 停止所有健康监控
-	for _, handler := range fm.handlers {
-		if handler.config.EnableHealthCheck {
-			// 这里应该有停止健康监控的逻辑
-			// 由于health_monitor使用的是goroutine，需要添加停止机制
-		}
+	// 停止所有健康监控和处理器
+	for groupKey, handler := range fm.handlers {
+		log.Printf("🧹 正在清理分组 %s 的Fallback处理器", groupKey)
+		
+		// 停止处理器
+		handler.Stop()
 	}
 	
 	// 清空处理器
 	fm.handlers = make(map[string]*FallbackHandler)
+	
+	log.Printf("✅ FallbackManager资源清理完成")
 }
 
 // RequestHandlerFunc 请求处理函数类型 (alias for RequestFunc)

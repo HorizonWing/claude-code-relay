@@ -116,19 +116,30 @@ func NewHealthMonitor(checkInterval time.Duration, config *FallbackConfig) *Heal
 		accountHealth: make(map[uint]*AccountHealth),
 		checkInterval: checkInterval,
 		config:        config,
+		stopChan:      make(chan struct{}),
 	}
 }
 
 // Start 启动健康监控
 func (hm *HealthMonitor) Start() {
-	ticker := time.NewTicker(hm.checkInterval)
-	defer ticker.Stop()
-
+	hm.ticker = time.NewTicker(hm.checkInterval)
+	
 	for {
 		select {
-		case <-ticker.C:
+		case <-hm.ticker.C:
 			hm.performHealthCheck()
+		case <-hm.stopChan:
+			hm.ticker.Stop()
+			log.Printf("🛑 健康监控已停止")
+			return
 		}
+	}
+}
+
+// Stop 停止健康监控
+func (hm *HealthMonitor) Stop() {
+	if hm.stopChan != nil {
+		close(hm.stopChan)
 	}
 }
 

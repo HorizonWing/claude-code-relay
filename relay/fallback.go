@@ -91,6 +91,8 @@ type HealthMonitor struct {
 	checkInterval   time.Duration
 	selector        AccountSelector
 	config          *FallbackConfig
+	stopChan        chan struct{} // 停止信号通道
+	ticker          *time.Ticker  // 定时器
 }
 
 // FallbackHandler Fallback处理器
@@ -101,6 +103,8 @@ type FallbackHandler struct {
 	healthMonitor  *HealthMonitor
 	mu             sync.RWMutex
 	requestHistory map[uint][]time.Time // 账号请求历史
+	stopChan       chan struct{}        // 停止信号通道
+	cleanupTicker  *time.Ticker         // 清理定时器
 }
 
 // NewFallbackHandler 创建新的Fallback处理器
@@ -115,12 +119,16 @@ func NewFallbackHandler(config *FallbackConfig) *FallbackHandler {
 		circuitBreaker: NewCircuitBreaker(config.CircuitBreakerThreshold, config.FailureWindow, config.RecoveryWindow),
 		healthMonitor:  NewHealthMonitor(config.HealthCheckInterval, config),
 		requestHistory: make(map[uint][]time.Time),
+		stopChan:       make(chan struct{}),
 	}
 
 	// 启动健康检查
 	if config.EnableHealthCheck {
 		go handler.healthMonitor.Start()
 	}
+
+	// 启动定期清理任务
+	handler.startCleanupTask()
 
 	return handler
 }
@@ -371,6 +379,11 @@ func (h *FallbackHandler) recordRequest(accountID uint) {
 	now := time.Now()
 	h.requestHistory[accountID] = append(h.requestHistory[accountID], now)
 	
+	// 限制每个账号的历史记录数量为最近100条
+	if len(h.requestHistory[accountID]) > 100 {
+		h.requestHistory[accountID] = h.requestHistory[accountID][len(h.requestHistory[accountID])-100:]
+	}
+	
 	// 清理超过10分钟的记录
 	cutoff := now.Add(-time.Minute * 10)
 	for id, times := range h.requestHistory {
@@ -380,8 +393,89 @@ func (h *FallbackHandler) recordRequest(accountID uint) {
 				validTimes = append(validTimes, t)
 			}
 		}
-		h.requestHistory[id] = validTimes
+		if len(validTimes) == 0 {
+			// 如果没有有效记录，删除这个账号的记录
+			delete(h.requestHistory, id)
+		} else {
+			h.requestHistory[id] = validTimes
+		}
 	}
+}
+
+// startCleanupTask 启动定期清理任务
+func (h *FallbackHandler) startCleanupTask() {
+	h.cleanupTicker = time.NewTicker(time.Hour) // 每小时清理一次
+	
+	go func() {
+		for {
+			select {
+			case <-h.cleanupTicker.C:
+				h.cleanup()
+			case <-h.stopChan:
+				return
+			}
+		}
+	}()
+}
+
+// cleanup 清理过期数据
+func (h *FallbackHandler) cleanup() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	
+	now := time.Now()
+	cutoff := now.Add(-time.Hour) // 清理1小时前的数据
+	
+	// 清理请求历史
+	for id, times := range h.requestHistory {
+		var validTimes []time.Time
+		for _, t := range times {
+			if t.After(cutoff) {
+				validTimes = append(validTimes, t)
+			}
+		}
+		if len(validTimes) == 0 {
+			delete(h.requestHistory, id)
+		} else {
+			// 限制最大记录数
+			if len(validTimes) > 100 {
+				validTimes = validTimes[len(validTimes)-100:]
+			}
+			h.requestHistory[id] = validTimes
+		}
+	}
+	
+	// 清理选择器的性能数据
+	if adaptiveSelector, ok := h.selector.(*AdaptiveSelector); ok {
+		adaptiveSelector.CleanupOldData(cutoff)
+	} else if smartSelector, ok := h.selector.(*SmartLoadBalanceSelector); ok {
+		if smartSelector.adaptiveSelector != nil {
+			smartSelector.adaptiveSelector.CleanupOldData(cutoff)
+		}
+	}
+	
+	// 清理健康监控的过期数据
+	h.healthMonitor.CleanupStaleData(time.Hour * 24) // 清理24小时前的健康数据
+	
+	log.Printf("🧹 Fallback清理任务完成，当前请求历史记录数: %d", len(h.requestHistory))
+}
+
+// Stop 停止FallbackHandler
+func (h *FallbackHandler) Stop() {
+	// 发送停止信号
+	close(h.stopChan)
+	
+	// 停止清理定时器
+	if h.cleanupTicker != nil {
+		h.cleanupTicker.Stop()
+	}
+	
+	// 停止健康监控
+	if h.config.EnableHealthCheck && h.healthMonitor != nil {
+		h.healthMonitor.Stop()
+	}
+	
+	log.Printf("🛑 FallbackHandler已停止")
 }
 
 // GetAccountStats 获取账号统计信息
